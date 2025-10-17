@@ -109,7 +109,7 @@
                     <!-- Pair/LP Address Input -->
                     <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
                         <i class="fa fa-exchange text-accent mr-3"></i>
-                        <input id="pairAddress" type="text" placeholder="0x... LP Address" class="address-input">
+                        <input id="pairAddress" type="text" placeholder="0x... Pair Address" class="address-input">
                         <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('pairAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
@@ -294,7 +294,8 @@
                 if (!amount) return;
                 const amountWei = web3.utils.toWei(amount, 'ether');
                 const targetContract = isAddMode ? FIXED_ROUTER : document.getElementById('pairAddress').value.trim();
-                const allowance = await tokenContract.methods.allowance(account, targetContract).call();
+                const allowanceContract = isAddMode ? tokenContract : lpContract;
+                const allowance = await allowanceContract.methods.allowance(account, targetContract).call();
                 const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
                 document.getElementById('approveButton').classList.toggle('hidden', hasAllowance);
                 document.getElementById('liquidityButton').disabled = !hasAllowance;
@@ -311,7 +312,8 @@
                 document.getElementById('approveButton').innerHTML = 'Approving... <i class="fa fa-spinner fa-spin ml-2"></i>';
                 const amountWei = web3.utils.toWei(amount, 'ether');
                 const targetContract = isAddMode ? FIXED_ROUTER : document.getElementById('pairAddress').value.trim();
-                const tx = await tokenContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 8000000 });
+                const approveContract = isAddMode ? tokenContract : lpContract;
+                const tx = await approveContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 100000 });
                 document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash.slice(0,10)}...`;
                 await checkAllowance();
             } catch (error) {
@@ -383,14 +385,15 @@
                     ).send({
                         from: account,
                         value: gtWei,
-                        gas: 8000000
+                        gas: 800000
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
                 } else {
                     const lpAmountWei = web3.utils.toWei(amount, 'ether');
+                    const lpTokenAddress = document.getElementById('pairAddress').value.trim();
                     const tx = await routerContract.methods.removeLiquidityETH(
-                        tokenContract._address,
+                        tokenContract._address,  // Token地址保持不变
                         lpAmountWei,
                         0,
                         0,
@@ -398,7 +401,7 @@
                         deadline
                     ).send({
                         from: account,
-                        gas: 8000000
+                        gas: 800000
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
@@ -442,7 +445,7 @@
             document.getElementById('addModeButton').classList.remove('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('removeModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
-            document.getElementById('pairAddress').placeholder = '0x... LP Address';
+            document.getElementById('pairAddress').placeholder = '0x... Pair Address';
             document.getElementById('amountLabel').innerText = 'Token Amount';
             document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
