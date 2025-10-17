@@ -109,8 +109,6 @@
 
                     <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token/LP Balance: 0</p>
 
-                    <button id="approveButton" class="w-full px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all shadow-lg">Approve Token</button>
-
                     <div>
                         <label id="amountLabel" class="block text-left text-light-gray mb-3 font-medium">Token Amount</label>
                         <input id="amount" type="text" placeholder="0.0" class="input-field">
@@ -265,78 +263,15 @@
                     const tokenBalance = await tokenContract.methods.balanceOf(account).call();
                     const tokenBalanceFormatted = Number(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4);
                     document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | Token: ${tokenBalanceFormatted}`;
-                    await checkAllowance();
                     await calculateGTAmount();
                 } else {
                     const lpBalance = await lpContract.methods.balanceOf(account).call();
                     const lpBalanceFormatted = Number(web3.utils.fromWei(lpBalance, 'ether')).toLocaleString();
                     document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | LP: ${lpBalanceFormatted}`;
-                    await checkAllowance();
                 }
                 document.getElementById('progressStatus').innerText = 'Ready to proceed...';
             } catch (error) {
                 document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
-            }
-        }
-
-        async function checkAllowance() {
-            try {
-                const amount = document.getElementById('amount').value.trim();
-                if (!amount) return;
-                
-                const amountWei = web3.utils.toWei(amount, 'ether');
-                let approveContract;
-                
-                if (isAddMode) {
-                    approveContract = tokenContract;
-                } else {
-                    approveContract = lpContract;
-                }
-                
-                const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
-                const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
-                
-                document.getElementById('liquidityButton').disabled = !hasAllowance;
-                
-                if (hasAllowance) {
-                    document.getElementById('approveButton').innerHTML = '<i class="fa fa-check mr-2"></i>Approved';
-                    document.getElementById('approveButton').classList.add('bg-green-500');
-                    document.getElementById('approveButton').classList.remove('bg-secondary');
-                } else {
-                    document.getElementById('approveButton').innerHTML = isAddMode ? 'Approve Token' : 'Approve LP';
-                    document.getElementById('approveButton').classList.add('bg-secondary');
-                    document.getElementById('approveButton').classList.remove('bg-green-500');
-                }
-            } catch (error) {}
-        }
-
-        async function approveToken() {
-            const amount = document.getElementById('amount').value.trim();
-            if (!amount || isNaN(amount) || amount <= 0) {
-                document.getElementById('progressStatus').innerText = 'Error: Invalid amount';
-                return;
-            }
-            try {
-                document.getElementById('approveButton').innerHTML = 'Approving... <i class="fa fa-spinner fa-spin ml-2"></i>';
-                const amountWei = web3.utils.toWei(amount, 'ether');
-                let approveContract;
-                
-                if (isAddMode) {
-                    approveContract = tokenContract;
-                } else {
-                    approveContract = lpContract;
-                }
-                
-                const tx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
-                    from: account, 
-                    gas: 100000 
-                });
-                document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash.slice(0,10)}...`;
-                await checkAllowance();
-            } catch (error) {
-                document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
-            } finally {
-                document.getElementById('approveButton').innerHTML = isAddMode ? 'Approve Token' : 'Approve LP';
             }
         }
 
@@ -367,22 +302,58 @@
             }
         }
 
-        async function executeLiquidity() {
+        async function autoApproveAndExecute() {
             const amount = document.getElementById('amount').value.trim();
+            if (!amount || isNaN(amount) || amount <= 0) {
+                document.getElementById('progressStatus').innerText = 'Error: Invalid amount';
+                return false;
+            }
+
+            let approveContract;
+            if (isAddMode) {
+                approveContract = tokenContract;
+            } else {
+                approveContract = lpContract;
+            }
+
+            const amountWei = web3.utils.toWei(amount, 'ether');
+            const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
+            const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
+
+            if (!hasAllowance) {
+                try {
+                    document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'Token' : 'LP'}...`;
+                    const approveTx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
+                        from: account, 
+                        gas: 100000 
+                    });
+                    document.getElementById('progressStatus').innerText = `Approved! ${approveTx.transactionHash.slice(0,10)}...`;
+                } catch (error) {
+                    document.getElementById('progressStatus').innerText = `Approve failed: ${error.message}`;
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        async function executeLiquidity() {
             const slippage = document.getElementById('slippage').value.trim();
             const button = document.getElementById('liquidityButton');
 
-            if (!amount || isNaN(amount) || amount <= 0 || !slippage || isNaN(slippage) || slippage < 0) {
-                document.getElementById('progressStatus').innerText = 'Error: Invalid input';
+            if (!slippage || isNaN(slippage) || slippage < 0) {
+                document.getElementById('progressStatus').innerText = 'Error: Invalid slippage';
                 return;
             }
 
             button.disabled = true;
             button.innerHTML = `${isAddMode ? 'Adding' : 'Removing'}... <i class="fa fa-spinner fa-spin ml-2"></i>`;
-            document.getElementById('progressStatus').innerText = `${isAddMode ? 'Adding' : 'Removing'} liquidity...`;
 
             try {
-                const amountWei = web3.utils.toWei(amount, 'ether');
+                const approved = await autoApproveAndExecute();
+                if (!approved) return;
+
+                const amountWei = web3.utils.toWei(document.getElementById('amount').value.trim(), 'ether');
                 const slippagePercent = parseFloat(slippage) / 100;
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
@@ -406,7 +377,7 @@
                     });
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
                 } else {
-                    const lpAmountWei = web3.utils.toWei(amount, 'ether');
+                    const lpAmountWei = web3.utils.toWei(document.getElementById('amount').value.trim(), 'ether');
                     const tx = await routerContract.methods.removeLiquidityETH(
                         tokenContract._address,
                         lpAmountWei,
@@ -446,9 +417,8 @@
 
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('liquidityButton').addEventListener('click', executeLiquidity);
-        document.getElementById('approveButton').addEventListener('click', approveToken);
         document.getElementById('amount').addEventListener('input', checkBalancesAndAllowance);
-        document.getElementById('slippage').addEventListener('input', checkAllowance);
+        document.getElementById('slippage').addEventListener('input', () => {});
         document.getElementById('tokenAddress').addEventListener('input', () => { initializeContracts(); checkBalancesAndAllowance(); });
         document.getElementById('pairAddress').addEventListener('input', () => { initializeContracts(); checkBalancesAndAllowance(); });
 
@@ -463,9 +433,6 @@
             document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
-            document.getElementById('approveButton').innerHTML = 'Approve Token';
-            document.getElementById('approveButton').classList.add('bg-secondary');
-            document.getElementById('approveButton').classList.remove('bg-green-500');
             initializeContracts();
             checkBalancesAndAllowance();
         });
@@ -481,9 +448,6 @@
             document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.add('hidden');
             document.getElementById('liquidityButton').innerText = 'Remove Liquidity';
-            document.getElementById('approveButton').innerHTML = 'Approve LP';
-            document.getElementById('approveButton').classList.add('bg-secondary');
-            document.getElementById('approveButton').classList.remove('bg-green-500');
             initializeContracts();
             checkBalancesAndAllowance();
         });
