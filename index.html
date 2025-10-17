@@ -327,7 +327,7 @@
             }
         }
 
-        async function autoApproveAndExecute() {
+        async function checkAndApprove() {
             const amount = document.getElementById('amount').value.trim();
             if (!amount || isNaN(amount) || amount <= 0) {
                 document.getElementById('progressStatus').innerText = 'Error: Invalid amount';
@@ -342,6 +342,8 @@
             }
 
             const amountWei = web3.utils.toWei(amount, 'ether');
+            document.getElementById('progressStatus').innerText = `Checking approval...`;
+            
             const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
             const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
 
@@ -352,11 +354,15 @@
                         from: account, 
                         gas: 100000 
                     });
-                    document.getElementById('progressStatus').innerText = `Approved! ${approveTx.transactionHash.slice(0,10)}...`;
+                    document.getElementById('progressStatus').innerText = `✅ Approved! ${approveTx.transactionHash.slice(0,10)}...`;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 } catch (error) {
-                    document.getElementById('progressStatus').innerText = `Approve failed: ${error.message}`;
+                    document.getElementById('progressStatus').innerText = `❌ Approve failed: ${error.message}`;
                     return false;
                 }
+            } else {
+                document.getElementById('progressStatus').innerText = `✅ Already approved!`;
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
             return true;
@@ -375,12 +381,18 @@
             button.innerHTML = `${isAddMode ? 'Adding' : 'Removing'}... <i class="fa fa-spinner fa-spin ml-2"></i>`;
 
             try {
-                const approved = await autoApproveAndExecute();
-                if (!approved) return;
+                const approved = await checkAndApprove();
+                if (!approved) {
+                    button.disabled = false;
+                    button.innerHTML = isAddMode ? 'Add Liquidity' : 'Remove Liquidity';
+                    return;
+                }
 
                 const amountWei = web3.utils.toWei(document.getElementById('amount').value.trim(), 'ether');
                 const slippagePercent = parseFloat(slippage) / 100;
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+                document.getElementById('progressStatus').innerText = `${isAddMode ? 'Adding' : 'Removing'} liquidity...`;
 
                 if (isAddMode) {
                     const gtAmount = document.getElementById('gtAmount').value.trim();
