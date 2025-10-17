@@ -100,7 +100,7 @@
                     <!-- Token Address Input -->
                     <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
                         <i class="fa fa-link text-accent mr-3"></i>
-                        <input id="tokenAddress" type="text" placeholder="0x... Token Contract Address" class="address-input" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
+                        <input id="tokenAddress" type="text" placeholder="0x... Token Contract Address" class="address-input">
                         <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('tokenAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
@@ -109,7 +109,7 @@
                     <!-- Pair/LP Address Input -->
                     <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
                         <i class="fa fa-exchange text-accent mr-3"></i>
-                        <input id="pairAddress" type="text" placeholder="0x... Pair Address" class="address-input" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9">
+                        <input id="pairAddress" type="text" placeholder="0x... Pair Address" class="address-input">
                         <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('pairAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
@@ -148,7 +148,7 @@
                     <button id="liquidityButton" class="w-full px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed shadow-lg" disabled>Add Liquidity</button>
 
                     <!-- Status -->
-                    <p id="progressStatus" class="text-light-gray text-sm">Ready to proceed...</p>
+                    <p id="progressStatus" class="text-light-gray text-sm">Please enter Token and Pair/LP addresses</p>
                 </div>
             </div>
         </div>
@@ -255,6 +255,16 @@
 
         async function checkBalancesAndAllowance() {
             if (!web3 || !account) return;
+            
+            const tokenAddr = document.getElementById('tokenAddress').value.trim();
+            const pairAddr = document.getElementById('pairAddress').value.trim();
+            
+            if (!tokenAddr || !pairAddr) {
+                document.getElementById('progressStatus').innerText = 'Please enter Token and Pair/LP addresses';
+                document.getElementById('liquidityButton').disabled = true;
+                return;
+            }
+            
             try {
                 const gtBalance = await web3.eth.getBalance(account);
                 const gtBalanceFormatted = Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4);
@@ -410,6 +420,7 @@
 
         function copyAddress(inputId) {
             const addr = document.getElementById(inputId).value.trim();
+            if (!addr) return;
             navigator.clipboard.writeText(addr).then(() => {
                 document.getElementById('progressStatus').innerText = `${inputId} copied!`;
                 setTimeout(() => checkBalancesAndAllowance(), 1000);
