@@ -80,9 +80,9 @@
             <div class="w-48 h-48 mx-auto mb-8 animate-float">
                 <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover rounded-full border-4 border-secondary/50 glow-border">
             </div>
-            <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">GDOG Liquidity Management</h1>
+            <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">Universal Liquidity</h1>
             <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">
-                Add or remove $TOKEN liquidity with precision.
+                Add or remove liquidity for ANY token pair.
             </p>
             <div class="bg-dark/50 p-6 rounded-lg border border-primary/30 max-w-md mx-auto mb-8">
                 <div class="flex flex-col space-y-4">
@@ -93,15 +93,25 @@
                     <button id="connectWalletButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all">Connect Wallet</button>
                     <p id="networkStatus" class="text-light-gray text-sm">Click to connect wallet...</p>
                     
+                    <!-- Token Address -->
                     <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
                         <i class="fa fa-link text-accent mr-3"></i>
-                        <input id="tokenAddress" type="text" placeholder="Token Address" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
-                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress()">
+                        <input id="tokenAddress" type="text" placeholder="Token Contract Address" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('tokenAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
                     </div>
                     
-                    <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token Balance: 0</p>
+                    <!-- Pair Address (Add Mode) / LP Address (Remove Mode) -->
+                    <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
+                        <i class="fa fa-exchange text-accent mr-3"></i>
+                        <input id="pairAddress" type="text" placeholder="Pair Address (Add) / LP Address (Remove)" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('pairAddress')">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token/LP Balance: 0</p>
                     
                     <button id="approveButton" class="px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden">Approve Token</button>
                     
@@ -115,19 +125,13 @@
                         <input id="gtAmount" type="text" placeholder="Auto calculated" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary" readonly>
                     </div>
                     
-                    <div id="lpAmountDiv" class="hidden">
-                        <label class="block text-left text-light-gray mb-2">LP Amount</label>
-                        <input id="lpAmount" type="text" placeholder="Auto calculated" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary" readonly>
-                    </div>
-                    
                     <div>
                         <label class="block text-left text-light-gray mb-2">Slippage Tolerance (%)</label>
                         <input id="slippage" type="text" placeholder="Enter slippage (e.g., 1)" value="1" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
                     </div>
                     
-                    <div class="flex justify-between text-light-gray text-sm" id="contractDiv" style="display: none;">
+                    <div class="text-light-gray text-sm">
                         <span>Router: <span class="text-primary font-mono">0x12814690F59a9CE8bA87dC8cF0692442bAa9C097</span></span>
-                        <span>Pair/LP: <input id="pairAddress" type="text" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9" class="bg-transparent border-b border-primary/50 w-32 text-center"></span>
                     </div>
                     
                     <button id="liquidityButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed" disabled>Add Liquidity</button>
@@ -170,8 +174,7 @@
 
         const pairAbi = [
             {"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-            {"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+            {"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}
         ];
 
         let web3, account, routerContract, tokenContract, pairContract, lpContract;
@@ -223,7 +226,6 @@
         }
 
         async function initializeContracts() {
-            // Router固定
             routerContract = new web3.eth.Contract(routerAbi, FIXED_ROUTER);
             
             const tokenAddr = document.getElementById('tokenAddress').value.trim();
@@ -231,7 +233,9 @@
             
             if (tokenAddr) tokenContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(tokenAddr));
             if (pairAddr) {
-                pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddr));
+                if (isAddMode) {
+                    pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddr));
+                }
                 lpContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(pairAddr));
             }
         }
@@ -239,7 +243,6 @@
         async function checkBalancesAndAllowance() {
             if (!web3 || !account) {
                 document.getElementById('liquidityButton').disabled = true;
-                document.getElementById('progressStatus').innerText = 'Error: Wallet not connected';
                 return;
             }
             try {
@@ -247,20 +250,21 @@
                 const gtBalanceFormatted = Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4);
                 
                 if (isAddMode) {
+                    if (!tokenContract || !lpContract) return;
                     const tokenBalance = await tokenContract.methods.balanceOf(account).call();
                     const tokenBalanceFormatted = Number(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4);
-                    document.getElementById('balanceStatus').innerText = `GT Balance: ${gtBalanceFormatted} | Token Balance: ${tokenBalanceFormatted}`;
+                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | Token: ${tokenBalanceFormatted}`;
                     await checkAllowance();
                     await calculateGTAmount();
                 } else {
+                    if (!lpContract) return;
                     const lpBalance = await lpContract.methods.balanceOf(account).call();
                     const lpBalanceFormatted = Number(web3.utils.fromWei(lpBalance, 'ether')).toLocaleString();
-                    document.getElementById('balanceStatus').innerText = `GT Balance: ${gtBalanceFormatted} | LP Balance: ${lpBalanceFormatted}`;
+                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | LP: ${lpBalanceFormatted}`;
                     await checkAllowance();
-                    await calculateLPAmount();
                 }
             } catch (error) {
-                document.getElementById('progressStatus').innerText = `Error: Balance check failed - ${error.message}`;
+                document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
             }
         }
 
@@ -274,9 +278,7 @@
                 const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
                 document.getElementById('approveButton').classList.toggle('hidden', hasAllowance);
                 document.getElementById('liquidityButton').disabled = !hasAllowance;
-            } catch (error) {
-                document.getElementById('progressStatus').innerText = `Error: Allowance check failed - ${error.message}`;
-            }
+            } catch (error) {}
         }
 
         async function approveToken() {
@@ -290,10 +292,10 @@
                 const amountWei = web3.utils.toWei(amount, 'ether');
                 const targetContract = isAddMode ? FIXED_ROUTER : document.getElementById('pairAddress').value.trim();
                 const tx = await tokenContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 100000 });
-                document.getElementById('progressStatus').innerText = `Approval successful: ${tx.transactionHash}`;
+                document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash}`;
                 await checkAllowance();
             } catch (error) {
-                document.getElementById('progressStatus').innerText = `Error: Approval failed - ${error.message}`;
+                document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
             } finally {
                 document.getElementById('approveButton').innerHTML = isAddMode ? 'Approve Token' : 'Approve LP';
             }
@@ -323,19 +325,6 @@
                 document.getElementById('gtAmount').value = Number(web3.utils.fromWei(gtWei, 'ether')).toFixed(6);
             } catch (error) {
                 document.getElementById('gtAmount').value = '0.02';
-            }
-        }
-
-        async function calculateLPAmount() {
-            if (!lpContract) {
-                document.getElementById('lpAmount').value = '';
-                return;
-            }
-            try {
-                const lpBalance = await lpContract.methods.balanceOf(account).call();
-                document.getElementById('lpAmount').value = Number(web3.utils.fromWei(lpBalance, 'ether')).toLocaleString();
-            } catch (error) {
-                document.getElementById('lpAmount').value = '0';
             }
         }
 
@@ -378,7 +367,6 @@
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash}`;
-                    document.getElementById('networkStatus').innerText = 'Liquidity added successfully!';
                 } else {
                     const lpAmountWei = web3.utils.toWei(amount, 'ether');
                     const tx = await routerContract.methods.removeLiquidityETH(
@@ -394,7 +382,6 @@
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash}`;
-                    document.getElementById('networkStatus').innerText = 'Liquidity removed successfully!';
                 }
                 await checkBalancesAndAllowance();
             } catch (error) {
@@ -411,10 +398,10 @@
             }
         }
 
-        function copyAddress() {
-            const addr = document.getElementById('tokenAddress').value.trim();
+        function copyAddress(inputId) {
+            const addr = document.getElementById(inputId).value.trim();
             navigator.clipboard.writeText(addr).then(() => {
-                document.getElementById('progressStatus').innerText = 'Address copied!';
+                document.getElementById('progressStatus').innerText = `${inputId} copied!`;
                 setTimeout(() => checkBalancesAndAllowance(), 1000);
             });
         }
@@ -433,13 +420,13 @@
             document.getElementById('addModeButton').classList.remove('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
             document.getElementById('removeModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
+            document.getElementById('pairAddress').placeholder = 'Pair Address (Add)';
             document.getElementById('amountLabel').innerText = 'Token Amount';
             document.getElementById('amount').placeholder = 'Enter token amount';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
-            document.getElementById('lpAmountDiv').classList.add('hidden');
-            document.getElementById('contractDiv').style.display = 'flex';
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve Token';
+            initializeContracts();
             checkBalancesAndAllowance();
         });
 
@@ -449,13 +436,13 @@
             document.getElementById('removeModeButton').classList.remove('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
             document.getElementById('addModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('addModeButton').classList.add('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
+            document.getElementById('pairAddress').placeholder = 'LP Address (Remove)';
             document.getElementById('amountLabel').innerText = 'LP Amount';
             document.getElementById('amount').placeholder = 'Enter LP amount';
             document.getElementById('gtAmountDiv').classList.add('hidden');
-            document.getElementById('lpAmountDiv').classList.remove('hidden');
-            document.getElementById('contractDiv').style.display = 'none';
             document.getElementById('liquidityButton').innerText = 'Remove Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve LP';
+            initializeContracts();
             checkBalancesAndAllowance();
         });
 
@@ -467,8 +454,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            initializeContracts();
-            checkBalancesAndAllowance();
+            document.getElementById('addModeButton').click();
         });
 
         window.addEventListener('scroll', () => {
