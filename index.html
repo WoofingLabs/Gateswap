@@ -50,6 +50,9 @@
             .address-input {
                 @apply flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none;
             }
+            .quick-token-btn {
+                @apply w-full px-4 py-2 bg-secondary text-dark rounded-lg font-medium hover:bg-secondary/80 transition-all flex items-center justify-center space-x-2;
+            }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Changa+One&display=swap" rel="stylesheet">
@@ -57,7 +60,7 @@
 <body class="bg-dark text-white font-sans overflow-x-hidden">
     <header class="fixed w-full z-50 bg-dark/90 backdrop-blur-md transition-all duration-300" id="navbar">
         <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3 cursor-pointer hover:text-primary transition-colors">
+            <div class="flex items-center space-x-3 cursor-pointer hover:text-primary transition-colors" onclick="fillGDOG()">
                 <div class="w-10 h-10 rounded-full overflow-hidden">
                     <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover">
                 </div>
@@ -74,9 +77,15 @@
         <div class="absolute top-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 right-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
         <div class="container mx-auto px-4 text-center relative z-10">
-            <div class="w-48 h-48 mx-auto mb-8 animate-float">
+            <div class="w-48 h-48 mx-auto mb-4 animate-float cursor-pointer" onclick="fillGDOG()">
                 <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover rounded-full border-4 border-secondary/50 glow-border">
             </div>
+            
+            <button onclick="fillGDOG()" class="quick-token-btn mb-6">
+                <i class="fa fa-rocket"></i>
+                <span>🚀 One-Click GDOG</span>
+            </button>
+
             <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">GateSwap</h1>
             <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">
                 Add or remove liquidity for ANY token pair.
@@ -145,6 +154,8 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script>
         const FIXED_ROUTER = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
+        const GDOG_TOKEN = '0xf6d9cf57e20ba0d33372e8998a9424aa53411e04';
+        const GDOG_PAIR = '0xd5dbe6cf9fec4e705bb4f219bf5b5185129c12b9';
         
         const chains = {
             GateLayer: {
@@ -174,6 +185,19 @@
 
         let web3, account, routerContract, tokenContract, pairContract, lpContract;
         let isAddMode = true;
+
+        function fillGDOG() {
+            document.getElementById('tokenAddress').value = GDOG_TOKEN;
+            document.getElementById('pairAddress').value = GDOG_PAIR;
+            document.getElementById('progressStatus').innerText = '🚀 GDOG loaded! Ready to proceed...';
+            
+            if (web3 && account) {
+                setTimeout(() => {
+                    initializeContracts();
+                    checkBalancesAndAllowance();
+                }, 500);
+            }
+        }
 
         async function initializeWeb3() {
             if (window.ethereum) {
@@ -262,7 +286,7 @@
                 if (isAddMode) {
                     const tokenBalance = await tokenContract.methods.balanceOf(account).call();
                     const tokenBalanceFormatted = Number(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4);
-                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | Token: ${tokenBalanceFormatted}`;
+                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | GDOG: ${tokenBalanceFormatted}`;
                     await calculateGTAmount();
                 } else {
                     const lpBalance = await lpContract.methods.balanceOf(account).call();
@@ -270,6 +294,7 @@
                     document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | LP: ${lpBalanceFormatted}`;
                 }
                 document.getElementById('progressStatus').innerText = 'Ready to proceed...';
+                document.getElementById('liquidityButton').disabled = !document.getElementById('amount').value.trim();
             } catch (error) {
                 document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
             }
@@ -322,7 +347,7 @@
 
             if (!hasAllowance) {
                 try {
-                    document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'Token' : 'LP'}...`;
+                    document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'GDOG' : 'LP'}...`;
                     const approveTx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
                         from: account, 
                         gas: 100000 
@@ -375,7 +400,7 @@
                         value: gtWei,
                         gas: 800000
                     });
-                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
+                    document.getElementById('progressStatus').innerText = `🚀 Success: ${tx.transactionHash.slice(0,10)}...`;
                 } else {
                     const lpAmountWei = web3.utils.toWei(document.getElementById('amount').value.trim(), 'ether');
                     const tx = await routerContract.methods.removeLiquidityETH(
@@ -389,7 +414,7 @@
                         from: account,
                         gas: 800000
                     });
-                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
+                    document.getElementById('progressStatus').innerText = `✅ Success: ${tx.transactionHash.slice(0,10)}...`;
                 }
                 await checkBalancesAndAllowance();
             } catch (error) {
@@ -417,7 +442,10 @@
 
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('liquidityButton').addEventListener('click', executeLiquidity);
-        document.getElementById('amount').addEventListener('input', checkBalancesAndAllowance);
+        document.getElementById('amount').addEventListener('input', () => {
+            checkBalancesAndAllowance();
+            document.getElementById('liquidityButton').disabled = !document.getElementById('amount').value.trim();
+        });
         document.getElementById('slippage').addEventListener('input', () => {});
         document.getElementById('tokenAddress').addEventListener('input', () => { initializeContracts(); checkBalancesAndAllowance(); });
         document.getElementById('pairAddress').addEventListener('input', () => { initializeContracts(); checkBalancesAndAllowance(); });
@@ -429,7 +457,7 @@
             document.getElementById('removeModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('pairAddress').placeholder = '0x... Pair Address';
-            document.getElementById('amountLabel').innerText = 'Token Amount';
+            document.getElementById('amountLabel').innerText = 'GDOG Amount';
             document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
