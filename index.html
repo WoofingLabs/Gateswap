@@ -327,7 +327,7 @@
             }
         }
 
-        async function checkAndApprove() {
+        async function forceApprove() {
             const amount = document.getElementById('amount').value.trim();
             if (!amount || isNaN(amount) || amount <= 0) {
                 document.getElementById('progressStatus').innerText = 'Error: Invalid amount';
@@ -342,30 +342,20 @@
             }
 
             const amountWei = web3.utils.toWei(amount, 'ether');
-            document.getElementById('progressStatus').innerText = `Checking approval...`;
+            document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'GDOG' : 'LP'}...`;
             
-            const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
-            const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
-
-            if (!hasAllowance) {
-                try {
-                    document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'GDOG' : 'LP'}...`;
-                    const approveTx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
-                        from: account, 
-                        gas: 100000 
-                    });
-                    document.getElementById('progressStatus').innerText = `✅ Approved! ${approveTx.transactionHash.slice(0,10)}...`;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } catch (error) {
-                    document.getElementById('progressStatus').innerText = `❌ Approve failed: ${error.message}`;
-                    return false;
-                }
-            } else {
-                document.getElementById('progressStatus').innerText = `✅ Already approved!`;
-                await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const approveTx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
+                    from: account, 
+                    gas: 100000 
+                });
+                document.getElementById('progressStatus').innerText = `✅ Approved! ${approveTx.transactionHash.slice(0,10)}...`;
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                return true;
+            } catch (error) {
+                document.getElementById('progressStatus').innerText = `❌ Approve failed: ${error.message}`;
+                return false;
             }
-
-            return true;
         }
 
         async function executeLiquidity() {
@@ -381,7 +371,7 @@
             button.innerHTML = `${isAddMode ? 'Adding' : 'Removing'}... <i class="fa fa-spinner fa-spin ml-2"></i>`;
 
             try {
-                const approved = await checkAndApprove();
+                const approved = await forceApprove();
                 if (!approved) {
                     button.disabled = false;
                     button.innerHTML = isAddMode ? 'Add Liquidity' : 'Remove Liquidity';
