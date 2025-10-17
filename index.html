@@ -48,6 +48,12 @@
                 background-image: url('data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Ccircle cx="1" cy="1" r="1" fill="%230068FF" fill-opacity="0.1"/%3E%3C/svg%3E');
                 background-size: 20px 20px;
             }
+            .input-field {
+                @apply w-full px-4 py-3 bg-dark/80 border border-primary/30 rounded-lg text-white placeholder-light-gray/70 focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30 transition-all duration-300;
+            }
+            .address-input {
+                @apply flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none;
+            }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Changa+One&display=swap" rel="stylesheet">
@@ -59,16 +65,11 @@
                 <div class="w-10 h-10 rounded-full overflow-hidden">
                     <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover">
                 </div>
-                <span class="font-display text-3xl text-primary text-shadow-glow">GDOG Liquidity</span>
+                <span class="font-display text-3xl text-primary text-shadow-glow">Universal Liquidity</span>
             </div>
             <button id="menuToggle" class="md:hidden text-2xl text-primary">
                 <i class="fa fa-bars"></i>
             </button>
-        </div>
-        <div id="mobileMenu" class="md:hidden bg-dark/95 absolute w-full top-full py-4 px-4 hidden">
-            <div class="flex flex-col space-y-4">
-                <a href="#liquidity" class="hover:text-primary transition-colors py-2 text-white">Liquidity</a>
-            </div>
         </div>
     </header>
 
@@ -84,58 +85,70 @@
             <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">
                 Add or remove liquidity for ANY token pair.
             </p>
-            <div class="bg-dark/50 p-6 rounded-lg border border-primary/30 max-w-md mx-auto mb-8">
-                <div class="flex flex-col space-y-4">
+            <div class="bg-dark/50 p-8 rounded-xl border border-primary/30 max-w-md mx-auto">
+                <div class="flex flex-col space-y-5">
+                    <!-- Mode Buttons -->
                     <div class="flex justify-center gap-4">
-                        <button id="addModeButton" class="px-6 py-2 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all">Add Liquidity</button>
-                        <button id="removeModeButton" class="px-6 py-2 bg-dark/80 border border-secondary text-secondary rounded-full font-medium hover:bg-secondary/10 transition-all">Remove Liquidity</button>
+                        <button id="addModeButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all shadow-lg">Add Liquidity</button>
+                        <button id="removeModeButton" class="px-6 py-3 bg-dark/80 border-2 border-secondary text-secondary rounded-full font-medium hover:bg-secondary/10 transition-all">Remove Liquidity</button>
                     </div>
-                    <button id="connectWalletButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all">Connect Wallet</button>
+
+                    <!-- Connect Wallet -->
+                    <button id="connectWalletButton" class="w-full px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all shadow-lg">Connect Wallet</button>
                     <p id="networkStatus" class="text-light-gray text-sm">Click to connect wallet...</p>
-                    
-                    <!-- Token Address -->
-                    <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
+
+                    <!-- Token Address Input -->
+                    <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
                         <i class="fa fa-link text-accent mr-3"></i>
-                        <input id="tokenAddress" type="text" placeholder="Token Contract Address" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
+                        <input id="tokenAddress" type="text" placeholder="0x... Token Contract Address" class="address-input" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
                         <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('tokenAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
                     </div>
-                    
-                    <!-- Pair Address (Add Mode) / LP Address (Remove Mode) -->
-                    <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
+
+                    <!-- Pair/LP Address Input -->
+                    <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
                         <i class="fa fa-exchange text-accent mr-3"></i>
-                        <input id="pairAddress" type="text" placeholder="Pair Address (Add) / LP Address (Remove)" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9">
+                        <input id="pairAddress" type="text" placeholder="0x... Pair Address" class="address-input" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9">
                         <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('pairAddress')">
                             <i class="fa fa-copy"></i>
                         </button>
                     </div>
-                    
+
+                    <!-- Balance Status -->
                     <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token/LP Balance: 0</p>
-                    
-                    <button id="approveButton" class="px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden">Approve Token</button>
-                    
-                    <div id="amountInput">
-                        <label id="amountLabel" class="block text-left text-light-gray mb-2">Token Amount</label>
-                        <input id="amount" type="text" placeholder="Enter token amount" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
-                    </div>
-                    
-                    <div id="gtAmountDiv" class="hidden">
-                        <label class="block text-left text-light-gray mb-2">GT Amount</label>
-                        <input id="gtAmount" type="text" placeholder="Auto calculated" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary" readonly>
-                    </div>
-                    
+
+                    <!-- Approve Button -->
+                    <button id="approveButton" class="w-full px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden shadow-lg">Approve Token</button>
+
+                    <!-- Amount Input -->
                     <div>
-                        <label class="block text-left text-light-gray mb-2">Slippage Tolerance (%)</label>
-                        <input id="slippage" type="text" placeholder="Enter slippage (e.g., 1)" value="1" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
+                        <label id="amountLabel" class="block text-left text-light-gray mb-3 font-medium">Token Amount</label>
+                        <input id="amount" type="text" placeholder="0.0" class="input-field">
                     </div>
-                    
-                    <div class="text-light-gray text-sm">
+
+                    <!-- GT Amount (Add Mode Only) -->
+                    <div id="gtAmountDiv" class="hidden">
+                        <label class="block text-left text-light-gray mb-3 font-medium">GT Amount</label>
+                        <input id="gtAmount" type="text" placeholder="0.000000" class="input-field" readonly>
+                    </div>
+
+                    <!-- Slippage -->
+                    <div>
+                        <label class="block text-left text-light-gray mb-3 font-medium">Slippage Tolerance (%)</label>
+                        <input id="slippage" type="text" value="1" class="input-field">
+                    </div>
+
+                    <!-- Router Info -->
+                    <div class="text-light-gray text-sm py-2">
                         <span>Router: <span class="text-primary font-mono">0x12814690F59a9CE8bA87dC8cF0692442bAa9C097</span></span>
                     </div>
-                    
-                    <button id="liquidityButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed" disabled>Add Liquidity</button>
-                    <p id="progressStatus" class="text-light-gray text-sm">Waiting for action...</p>
+
+                    <!-- Execute Button -->
+                    <button id="liquidityButton" class="w-full px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed shadow-lg" disabled>Add Liquidity</button>
+
+                    <!-- Status -->
+                    <p id="progressStatus" class="text-light-gray text-sm">Ready to proceed...</p>
                 </div>
             </div>
         </div>
@@ -193,7 +206,7 @@
                     document.getElementById('networkStatus').innerText = 'Connected to Gate Layer (ID: 10088)';
                 } catch (error) {
                     document.getElementById('networkStatus').innerText = 'Wallet connection failed';
-                    document.getElementById('progressStatus').innerText = `Error: Connection failed - ${error.message}`;
+                    document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
                 }
             } else {
                 document.getElementById('networkStatus').innerText = 'Please install MetaMask';
@@ -241,10 +254,7 @@
         }
 
         async function checkBalancesAndAllowance() {
-            if (!web3 || !account) {
-                document.getElementById('liquidityButton').disabled = true;
-                return;
-            }
+            if (!web3 || !account) return;
             try {
                 const gtBalance = await web3.eth.getBalance(account);
                 const gtBalanceFormatted = Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4);
@@ -292,7 +302,7 @@
                 const amountWei = web3.utils.toWei(amount, 'ether');
                 const targetContract = isAddMode ? FIXED_ROUTER : document.getElementById('pairAddress').value.trim();
                 const tx = await tokenContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 100000 });
-                document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash}`;
+                document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash.slice(0,10)}...`;
                 await checkAllowance();
             } catch (error) {
                 document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
@@ -366,7 +376,7 @@
                         gas: 800000
                     });
 
-                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash}`;
+                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
                 } else {
                     const lpAmountWei = web3.utils.toWei(amount, 'ether');
                     const tx = await routerContract.methods.removeLiquidityETH(
@@ -381,7 +391,7 @@
                         gas: 800000
                     });
 
-                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash}`;
+                    document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
                 }
                 await checkBalancesAndAllowance();
             } catch (error) {
@@ -406,6 +416,7 @@
             });
         }
 
+        // Event Listeners
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('liquidityButton').addEventListener('click', executeLiquidity);
         document.getElementById('approveButton').addEventListener('click', approveToken);
@@ -417,12 +428,12 @@
         document.getElementById('addModeButton').addEventListener('click', () => {
             isAddMode = true;
             document.getElementById('addModeButton').classList.add('bg-primary', 'text-white');
-            document.getElementById('addModeButton').classList.remove('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
+            document.getElementById('addModeButton').classList.remove('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('removeModeButton').classList.remove('bg-primary', 'text-white');
-            document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
-            document.getElementById('pairAddress').placeholder = 'Pair Address (Add)';
+            document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
+            document.getElementById('pairAddress').placeholder = '0x... Pair Address';
             document.getElementById('amountLabel').innerText = 'Token Amount';
-            document.getElementById('amount').placeholder = 'Enter token amount';
+            document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve Token';
@@ -433,12 +444,12 @@
         document.getElementById('removeModeButton').addEventListener('click', () => {
             isAddMode = false;
             document.getElementById('removeModeButton').classList.add('bg-primary', 'text-white');
-            document.getElementById('removeModeButton').classList.remove('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
+            document.getElementById('removeModeButton').classList.remove('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('addModeButton').classList.remove('bg-primary', 'text-white');
-            document.getElementById('addModeButton').classList.add('bg-dark/80', 'border', 'border-secondary', 'text-secondary');
-            document.getElementById('pairAddress').placeholder = 'LP Address (Remove)';
+            document.getElementById('addModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
+            document.getElementById('pairAddress').placeholder = '0x... LP Address';
             document.getElementById('amountLabel').innerText = 'LP Amount';
-            document.getElementById('amount').placeholder = 'Enter LP amount';
+            document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.add('hidden');
             document.getElementById('liquidityButton').innerText = 'Remove Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve LP';
@@ -446,24 +457,8 @@
             checkBalancesAndAllowance();
         });
 
-        const menuToggle = document.getElementById('menuToggle');
-        const mobileMenu = document.getElementById('mobileMenu');
-        menuToggle.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-            menuToggle.innerHTML = mobileMenu.classList.contains('hidden') ? '<i class="fa fa-bars"></i>' : '<i class="fa fa-times"></i>';
-        });
-
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('addModeButton').click();
-        });
-
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('bg-dark/95', 'shadow-lg');
-            } else {
-                navbar.classList.remove('bg-dark/95', 'shadow-lg');
-            }
         });
     </script>
 </body>
