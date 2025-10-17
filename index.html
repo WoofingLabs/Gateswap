@@ -109,7 +109,7 @@
 
                     <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token/LP Balance: 0</p>
 
-                    <button id="approveButton" class="w-full px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden shadow-lg">Approve Token</button>
+                    <button id="approveButton" class="w-full px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all shadow-lg">Approve Token</button>
 
                     <div>
                         <label id="amountLabel" class="block text-left text-light-gray mb-3 font-medium">Token Amount</label>
@@ -295,8 +295,18 @@
                 
                 const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
                 const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
-                document.getElementById('approveButton').classList.toggle('hidden', hasAllowance);
+                
                 document.getElementById('liquidityButton').disabled = !hasAllowance;
+                
+                if (hasAllowance) {
+                    document.getElementById('approveButton').innerHTML = '<i class="fa fa-check mr-2"></i>Approved';
+                    document.getElementById('approveButton').classList.add('bg-green-500');
+                    document.getElementById('approveButton').classList.remove('bg-secondary');
+                } else {
+                    document.getElementById('approveButton').innerHTML = isAddMode ? 'Approve Token' : 'Approve LP';
+                    document.getElementById('approveButton').classList.add('bg-secondary');
+                    document.getElementById('approveButton').classList.remove('bg-green-500');
+                }
             } catch (error) {}
         }
 
@@ -454,6 +464,8 @@
             document.getElementById('gtAmountDiv').classList.remove('hidden');
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve Token';
+            document.getElementById('approveButton').classList.add('bg-secondary');
+            document.getElementById('approveButton').classList.remove('bg-green-500');
             initializeContracts();
             checkBalancesAndAllowance();
         });
@@ -470,6 +482,8 @@
             document.getElementById('gtAmountDiv').classList.add('hidden');
             document.getElementById('liquidityButton').innerText = 'Remove Liquidity';
             document.getElementById('approveButton').innerHTML = 'Approve LP';
+            document.getElementById('approveButton').classList.add('bg-secondary');
+            document.getElementById('approveButton').classList.remove('bg-green-500');
             initializeContracts();
             checkBalancesAndAllowance();
         });
