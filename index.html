@@ -249,6 +249,14 @@
                 return;
             }
             
+            await initializeContracts();
+            
+            if (!tokenContract || !lpContract) {
+                document.getElementById('progressStatus').innerText = 'Invalid contract address';
+                document.getElementById('liquidityButton').disabled = true;
+                return;
+            }
+            
             try {
                 const gtBalance = await web3.eth.getBalance(account);
                 const gtBalanceFormatted = Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4);
@@ -265,6 +273,7 @@
                     document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | LP: ${lpBalanceFormatted}`;
                     await checkAllowance();
                 }
+                document.getElementById('progressStatus').innerText = 'Ready to proceed...';
             } catch (error) {
                 document.getElementById('progressStatus').innerText = `Error: ${error.message}`;
             }
@@ -276,17 +285,15 @@
                 if (!amount) return;
                 
                 const amountWei = web3.utils.toWei(amount, 'ether');
-                let approveContract, targetContract;
+                let approveContract;
                 
                 if (isAddMode) {
                     approveContract = tokenContract;
-                    targetContract = FIXED_ROUTER;
                 } else {
                     approveContract = lpContract;
-                    targetContract = FIXED_ROUTER;
                 }
                 
-                const allowance = await approveContract.methods.allowance(account, targetContract).call();
+                const allowance = await approveContract.methods.allowance(account, FIXED_ROUTER).call();
                 const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
                 document.getElementById('approveButton').classList.toggle('hidden', hasAllowance);
                 document.getElementById('liquidityButton').disabled = !hasAllowance;
@@ -427,7 +434,6 @@
             });
         }
 
-        // Event Listeners
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('liquidityButton').addEventListener('click', executeLiquidity);
         document.getElementById('approveButton').addEventListener('click', approveToken);
