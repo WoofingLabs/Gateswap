@@ -311,7 +311,7 @@
                 document.getElementById('approveButton').innerHTML = 'Approving... <i class="fa fa-spinner fa-spin ml-2"></i>';
                 const amountWei = web3.utils.toWei(amount, 'ether');
                 const targetContract = isAddMode ? FIXED_ROUTER : document.getElementById('pairAddress').value.trim();
-                const tx = await tokenContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 100000 });
+                const tx = await tokenContract.methods.approve(targetContract, amountWei).send({ from: account, gas: 8000000 });
                 document.getElementById('progressStatus').innerText = `Approval: ${tx.transactionHash.slice(0,10)}...`;
                 await checkAllowance();
             } catch (error) {
@@ -383,7 +383,7 @@
                     ).send({
                         from: account,
                         value: gtWei,
-                        gas: 800000
+                        gas: 8000000
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
@@ -398,7 +398,7 @@
                         deadline
                     ).send({
                         from: account,
-                        gas: 800000
+                        gas: 8000000
                     });
 
                     document.getElementById('progressStatus').innerText = `Success: ${tx.transactionHash.slice(0,10)}...`;
