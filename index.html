@@ -119,7 +119,7 @@
                         </button>
                     </div>
 
-                    <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token/LP Balance: 0</p>
+                    <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | Token Balance: 0</p>
 
                     <div class="relative">
                         <label id="amountLabel" class="block text-left text-light-gray mb-3 font-medium">Token Amount</label>
@@ -181,7 +181,8 @@
         const erc20Abi = [
             {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},
             {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"stateMutability":"view","type":"function"}
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"stateMutability":"view","type":"function"}
         ];
 
         const pairAbi = [
@@ -189,7 +190,7 @@
             {"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}
         ];
 
-        let web3, account, routerContract, tokenContract, pairContract, lpContract;
+        let web3, account, routerContract, tokenContract, pairContract, lpContract, currentTokenSymbol = 'TOKEN';
         let isAddMode = true;
 
         function fillGDOG() {
@@ -213,6 +214,14 @@
                     document.getElementById('progressStatus').innerText = `MAX: ${maxAmount} LP loaded!`;
                     document.getElementById('liquidityButton').disabled = false;
                 });
+            }
+        }
+
+        async function getTokenSymbol(contract) {
+            try {
+                return await contract.methods.symbol().call();
+            } catch (error) {
+                return 'TOKEN';
             }
         }
 
@@ -267,7 +276,10 @@
             const tokenAddr = document.getElementById('tokenAddress').value.trim();
             const pairAddr = document.getElementById('pairAddress').value.trim();
             
-            if (tokenAddr) tokenContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(tokenAddr));
+            if (tokenAddr) {
+                tokenContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(tokenAddr));
+                currentTokenSymbol = await getTokenSymbol(tokenContract);
+            }
             if (pairAddr) {
                 if (isAddMode) {
                     pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddr));
@@ -305,13 +317,15 @@
                 if (isAddMode) {
                     const tokenBalance = await tokenContract.methods.balanceOf(account).call();
                     const tokenBalanceFormatted = Number(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4);
-                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | GDOG: ${tokenBalanceFormatted}`;
+                    document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | ${currentTokenSymbol}: ${tokenBalanceFormatted}`;
+                    document.getElementById('amountLabel').innerText = `${currentTokenSymbol} Amount`;
                     document.getElementById('maxButton').classList.add('hidden');
                     await calculateGTAmount();
                 } else {
                     const lpBalance = await lpContract.methods.balanceOf(account).call();
                     const lpBalanceFormatted = Number(web3.utils.fromWei(lpBalance, 'ether')).toLocaleString();
                     document.getElementById('balanceStatus').innerText = `GT: ${gtBalanceFormatted} | LP: ${lpBalanceFormatted}`;
+                    document.getElementById('amountLabel').innerText = 'LP Amount';
                     document.getElementById('maxButton').classList.remove('hidden');
                 }
                 document.getElementById('progressStatus').innerText = 'Ready to proceed...';
@@ -363,7 +377,7 @@
             }
 
             const amountWei = web3.utils.toWei(amount, 'ether');
-            document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? 'GDOG' : 'LP'}...`;
+            document.getElementById('progressStatus').innerText = `Approving ${isAddMode ? currentTokenSymbol : 'LP'}...`;
             
             try {
                 const approveTx = await approveContract.methods.approve(FIXED_ROUTER, amountWei).send({ 
@@ -480,8 +494,6 @@
             document.getElementById('removeModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('removeModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('pairAddress').placeholder = '0x... Pair Address';
-            document.getElementById('amountLabel').innerText = 'GDOG Amount';
-            document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.remove('hidden');
             document.getElementById('liquidityButton').innerText = 'Add Liquidity';
             document.getElementById('maxButton').classList.add('hidden');
@@ -496,8 +508,6 @@
             document.getElementById('addModeButton').classList.remove('bg-primary', 'text-white');
             document.getElementById('addModeButton').classList.add('bg-dark/80', 'border-2', 'border-secondary', 'text-secondary');
             document.getElementById('pairAddress').placeholder = '0x... LP Address';
-            document.getElementById('amountLabel').innerText = 'LP Amount';
-            document.getElementById('amount').placeholder = '0.0';
             document.getElementById('gtAmountDiv').classList.add('hidden');
             document.getElementById('liquidityButton').innerText = 'Remove Liquidity';
             initializeContracts();
