@@ -1,260 +1,510 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIMA - Gatefun Liquidity Pool</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #1a1a2e;
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GDOG 流动性管理</title>
+    <link rel="icon" type="image/png" href="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0068FF',
+                        secondary: '#18E5A0',
+                        accent: '#FFD700',
+                        dark: '#070808',
+                        'light-gray': '#E5E7EB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Changa One', 'system-ui', 'sans-serif']
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-glow': 'pulse 4s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-8px)' }
+                        }
+                    }
+                }
+            }
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .logo {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 20px;
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #00d4ff;
-        }
-        .subtitle {
-            font-size: 1.1em;
-            color: #b0b0b0;
-        }
-        .wallet-connect {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background: #16213e;
-            border-radius: 10px;
-        }
-        .connect-btn {
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            border-radius: 50px;
-            cursor: pointer;
-        }
-        .wallet-address {
-            margin-top: 15px;
-            font-family: monospace;
-            font-size: 0.9em;
-            color: #b0b0b0;
-            word-break: break-all;
-        }
-        .liquidity-section {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        .panel {
-            flex: 1;
-            background: #16213e;
-            padding: 25px;
-            border-radius: 10px;
-            border: 1px solid #00d4ff;
-        }
-        .panel h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #00d4ff;
-            font-size: 1.5em;
-        }
-        .input-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #b0b0b0;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #00d4ff;
-            border-radius: 5px;
-            background: #1a1a2e;
-            color: #fff;
-            font-size: 1em;
-        }
-        input::placeholder {
-            color: #666;
-        }
-        .balance {
-            text-align: right;
-            font-size: 0.9em;
-            color: #b0b0b0;
-            margin-top: 5px;
-        }
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .add-btn {
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
-            color: white;
-        }
-        .remove-btn {
-            background: linear-gradient(45deg, #ff4757, #ff3838);
-            color: white;
-        }
-        @media (max-width: 768px) {
-            .liquidity-section {
-                flex-direction: column;
-                gap: 20px;
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow-glow {
+                text-shadow: 0 0 10px rgba(0, 104, 255, 0.5);
+            }
+            .glow-border {
+                box-shadow: 0 0 12px rgba(24, 229, 160, 0.3);
+            }
+            .bg-grid {
+                background-image: url('data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Ccircle cx="1" cy="1" r="1" fill="%230068FF" fill-opacity="0.1"/%3E%3C/svg%3E');
+                background-size: 20px 20px;
             }
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Changa+One&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="Gdog Logo" class="logo">
-            <h1>MIMA Gatefun</h1>
-            <p class="subtitle">Liquidity Pool</p>
-        </header>
-
-        <div class="wallet-connect" id="walletConnect">
-            <button class="connect-btn" onclick="connectWallet()">Connect Wallet</button>
-            <div class="wallet-address" id="walletAddress" style="display: none;"></div>
-        </div>
-
-        <div class="liquidity-section" id="liquiditySection" style="display: none;">
-            <div class="panel">
-                <h2>Add Liquidity</h2>
-                <div class="input-group">
-                    <label>Token A Amount</label>
-                    <input type="number" id="amountADesired" placeholder="0.0" step="0.01">
-                    <div class="balance">Balance: <span id="balanceA">0</span></div>
+<body class="bg-dark text-white font-sans overflow-x-hidden">
+    <header class="fixed w-full z-50 bg-dark/90 backdrop-blur-md transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer hover:text-primary transition-colors">
+                <div class="w-10 h-10 rounded-full overflow-hidden">
+                    <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover">
                 </div>
-                <div class="input-group">
-                    <label>Token B Amount</label>
-                    <input type="number" id="amountBDesired" placeholder="0.0" step="0.01">
-                    <div class="balance">Balance: <span id="balanceB">0</span></div>
-                </div>
-                <button class="action-btn add-btn" onclick="addLiquidity()">Add Liquidity</button>
+                <span class="font-display text-3xl text-primary text-shadow-glow">GDOG 流动性管理</span>
             </div>
-
-            <div class="panel">
-                <h2>Remove Liquidity</h2>
-                <div class="input-group">
-                    <label>LP Amount</label>
-                    <input type="number" id="liquidity" placeholder="0.0" step="0.01">
-                    <div class="balance">Balance: <span id="balanceLP">0</span></div>
-                </div>
-                <div class="input-group">
-                    <label>Min Amount A</label>
-                    <input type="number" id="amountAMin" placeholder="0.0" step="0.01">
-                </div>
-                <div class="input-group">
-                    <label>Min Amount B</label>
-                    <input type="number" id="amountBMin" placeholder="0.0" step="0.01">
-                </div>
-                <button class="action-btn remove-btn" onclick="removeLiquidity()">Remove Liquidity</button>
+            <button id="menuToggle" class="md:hidden text-2xl text-primary">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobileMenu" class="md:hidden bg-dark/95 absolute w-full top-full py-4 px-4 hidden">
+            <div class="flex flex-col space-y-4">
+                <a href="#add" class="hover:text-primary transition-colors py-2 text-white">添加流动性</a>
+                <a href="#remove" class="hover:text-primary transition-colors py-2 text-white">移除流动性</a>
             </div>
         </div>
-    </div>
+    </header>
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <section id="add" class="min-h-screen pt-24 pb-16 bg-grid relative overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-b from-primary/10 to-dark pointer-events-none"></div>
+        <div class="absolute top-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+        <div class="container mx-auto px-4 text-center relative z-10">
+            <div class="w-48 h-48 mx-auto mb-8 animate-float">
+                <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover rounded-full border-4 border-secondary/50 glow-border">
+            </div>
+            <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">添加 GDOG 流动性</h1>
+            <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">支持任意代币对的流动性添加</p>
+            <div class="bg-dark/50 p-6 rounded-lg border border-primary/30 max-w-md mx-auto mb-8">
+                <div class="flex flex-col space-y-4">
+                    <button id="connectWalletButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all">连接钱包</button>
+                    <p id="networkStatus" class="text-light-gray text-sm">点击连接钱包...</p>
+                    <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
+                        <i class="fa fa-link text-accent mr-3"></i>
+                        <input id="tokenAddress" type="text" placeholder="输入 GDOG 代币地址" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress()">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <p id="balanceStatus" class="text-light-gray text-sm">GT 余额: 0 | GDOG 余额: 0</p>
+                    <div>
+                        <label class="block text-left text-light-gray mb-2">GDOG 数量</label>
+                        <input id="tokenAmount" type="text" placeholder="输入 GDOG 数量" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
+                    </div>
+                    <div>
+                        <label class="block text-left text-light-gray mb-2">GT 数量</label>
+                        <input id="gtAmount" type="text" placeholder="自动计算" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-left text-light-gray mb-2">滑点容忍度 (%)</label>
+                        <input id="slippage" type="text" value="1" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
+                    </div>
+                    <button id="approveButton" class="px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden">授权 GDOG</button>
+                    <button id="addLiquidityButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed" disabled>添加流动性</button>
+                    <p id="progressStatus" class="text-light-gray text-sm">等待操作...</p>
+                </div>
+            </div>
+            <div class="flex justify-center space-x-4 text-sm text-light-gray">
+                <div>Router: <input id="routerAddress" type="text" value="0x12814690f59a9ce8ba87dc8cf0692442baa9c097" class="bg-transparent border-b border-primary/50 w-48 text-center"></div>
+                <div>Pair: <input id="pairAddress" type="text" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9" class="bg-transparent border-b border-primary/50 w-48 text-center"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="remove" class="min-h-screen pt-24 pb-16 bg-grid relative overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-b from-primary/10 to-dark pointer-events-none"></div>
+        <div class="absolute top-0 left-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+        <div class="container mx-auto px-4 text-center relative z-10">
+            <div class="w-48 h-48 mx-auto mb-8 animate-float">
+                <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="GDOG Logo" class="w-full h-full object-cover rounded-full border-4 border-secondary/50 glow-border">
+            </div>
+            <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">撤出 GDOG 流动性</h1>
+            <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">一键撤出全部 LP 代币</p>
+            <div class="bg-dark/50 p-6 rounded-lg border border-primary/30 max-w-md mx-auto mb-8">
+                <div class="flex flex-col space-y-4">
+                    <p id="networkStatusRemove" class="text-light-gray text-sm">使用上方钱包连接</p>
+                    <div class="flex items-center bg-dark/80 p-3 rounded-lg border border-primary/20">
+                        <i class="fa fa-link text-accent mr-3"></i>
+                        <input id="lpAddress" type="text" placeholder="输入 LP 代币地址" class="flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none" value="0xd5DBe6cf9Fec4e705bB4f219bf5b5185129c12b9">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyLpAddress()">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <p id="lpBalanceStatus" class="text-light-gray text-sm">LP 余额: 0</p>
+                    <div>
+                        <label class="block text-left text-light-gray mb-2">滑点容忍度 (%)</label>
+                        <input id="slippageRemove" type="text" value="20" class="w-full px-4 py-2 bg-dark/80 border border-primary/20 rounded-lg text-white focus:outline-none focus:border-secondary">
+                    </div>
+                    <button id="approveLpButton" class="px-6 py-3 bg-secondary text-dark rounded-full font-medium hover:bg-secondary/80 transition-all hidden">授权 LP 代币</button>
+                    <button id="removeLiquidityButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all disabled:bg-dark/50 disabled:cursor-not-allowed" disabled>撤出全部流动性</button>
+                    <p id="progressStatusRemove" class="text-light-gray text-sm">等待操作...</p>
+                </div>
+            </div>
+            <div class="flex justify-center space-x-4 text-sm text-light-gray">
+                <div>Router: <input id="routerAddressRemove" type="text" value="0x12814690f59a9ce8ba87dc8cf0692442baa9c097" class="bg-transparent border-b border-primary/50 w-48 text-center"></div>
+                <div>Token: <input id="tokenAddressRemove" type="text" value="0xf6D9Cf57e20bA0d33372E8998A9424aa53411E04" class="bg-transparent border-b border-primary/50 w-48 text-center"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark/95 py-12 border-t border-primary/20">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-light-gray text-sm">© 2025 GDOG. All rights reserved. DYOR and invest responsibly.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script>
-        let web3, account, pairContract;
-        
-        const PAIR_ABI = [
-            {"inputs":[{"internalType":"uint256","name":"amountADesired","type":"uint256"},{"internalType":"uint256","name":"amountBDesired","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"mint","outputs":[{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"burn","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        const chains = {
+            GateLayer: {
+                chainId: 10088,
+                chainName: 'Gate Layer',
+                rpcUrl: 'https://gatelayer-mainnet.gatenode.cc/',
+                blockExplorer: 'https://www.gatescan.org/gatelayer/',
+                nativeCurrency: { name: 'GT', symbol: 'GT', decimals: 18 }
+            }
+        };
+
+        const routerAbi = [
+            {"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}
         ];
-        
-        const ERC20_ABI = [{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
-        
-        const PAIR_ADDRESS = "0xYourPairAddress";
-        const TOKEN_A = "0xTokenA";
-        const TOKEN_B = "0xTokenB";
-        
-        async function connectWallet() {
+
+        const erc20Abi = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ];
+
+        const pairAbi = [
+            {"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}
+        ];
+
+        let web3, account, routerContract, tokenContract, pairContract, lpContract;
+
+        async function initializeWeb3() {
             if (window.ethereum) {
                 web3 = new Web3(window.ethereum);
                 try {
-                    await window.ethereum.request({method: 'eth_requestAccounts'});
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
                     account = (await web3.eth.getAccounts())[0];
-                    document.getElementById('walletAddress').textContent = account;
-                    document.getElementById('walletAddress').style.display = 'block';
-                    document.getElementById('walletConnect').innerHTML = `<button class="connect-btn" onclick="disconnectWallet()">Disconnect</button><div class="wallet-address">${account}</div>`;
-                    pairContract = new web3.eth.Contract(PAIR_ABI, PAIR_ADDRESS);
-                    document.getElementById('liquiditySection').style.display = 'flex';
-                    updateBalances();
-                } catch (err) { alert('Connection failed'); }
-            } else { alert('Install MetaMask'); }
+                    document.getElementById('connectWalletButton').innerText = `已连接: ${account.slice(0, 6)}...${account.slice(-4)}`;
+                    await switchNetwork('GateLayer');
+                    await initializeAddContracts();
+                    await initializeRemoveContracts();
+                    await checkAddBalances();
+                    await checkRemoveBalances();
+                    document.getElementById('networkStatus').innerText = '已连接到 Gate Layer (ID: 10088)';
+                    document.getElementById('networkStatusRemove').innerText = '已连接到 Gate Layer (ID: 10088)';
+                } catch (error) {
+                    document.getElementById('networkStatus').innerText = '钱包连接失败';
+                    document.getElementById('progressStatus').innerText = `错误: 连接失败 - ${error.message}`;
+                }
+            } else {
+                document.getElementById('networkStatus').innerText = '请安装 MetaMask';
+            }
         }
-        
-        function disconnectWallet() {
-            account = null;
-            document.getElementById('walletConnect').innerHTML = '<button class="connect-btn" onclick="connectWallet()">Connect Wallet</button>';
-            document.getElementById('liquiditySection').style.display = 'none';
-        }
-        
-        async function updateBalances() {
-            if (!account) return;
+
+        async function switchNetwork(chain) {
+            const chainConfig = chains[chain];
             try {
-                const tokenAContract = new web3.eth.Contract(ERC20_ABI, TOKEN_A);
-                const tokenBContract = new web3.eth.Contract(ERC20_ABI, TOKEN_B);
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${chainConfig.chainId.toString(16)}` }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: `0x${chainConfig.chainId.toString(16)}`,
+                            chainName: chainConfig.chainName,
+                            rpcUrls: [chainConfig.rpcUrl],
+                            nativeCurrency: chainConfig.nativeCurrency,
+                            blockExplorerUrls: [chainConfig.blockExplorer]
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        async function initializeAddContracts() {
+            const routerAddr = document.getElementById('routerAddress').value.trim();
+            const tokenAddr = document.getElementById('tokenAddress').value.trim();
+            const pairAddr = document.getElementById('pairAddress').value.trim();
+            routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddr));
+            tokenContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(tokenAddr));
+            pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddr));
+        }
+
+        async function initializeRemoveContracts() {
+            const routerAddr = document.getElementById('routerAddressRemove').value.trim();
+            const lpAddr = document.getElementById('lpAddress').value.trim();
+            const tokenAddr = document.getElementById('tokenAddressRemove').value.trim();
+            routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddr));
+            lpContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(lpAddr));
+        }
+
+        async function checkAddBalances() {
+            if (!web3 || !account) return;
+            try {
+                const gtBalance = await web3.eth.getBalance(account);
+                const tokenBalance = await tokenContract.methods.balanceOf(account).call();
+                document.getElementById('balanceStatus').innerText = `GT 余额: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4)} | GDOG 余额: ${Number(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4)}`;
+                await checkAddAllowance();
+                await calculateGTAmount();
+            } catch (error) {
+                document.getElementById('progressStatus').innerText = `错误: 余额查询失败 - ${error.message}`;
+            }
+        }
+
+        async function checkRemoveBalances() {
+            if (!web3 || !account) return;
+            try {
+                const lpBalance = await lpContract.methods.balanceOf(account).call();
+                document.getElementById('lpBalanceStatus').innerText = `LP 余额: ${Number(web3.utils.fromWei(lpBalance, 'ether')).toLocaleString()}`;
+                await checkRemoveAllowance();
+            } catch (error) {
+                document.getElementById('progressStatusRemove').innerText = `错误: 余额查询失败 - ${error.message}`;
+            }
+        }
+
+        async function checkAddAllowance() {
+            const amount = document.getElementById('tokenAmount').value.trim();
+            if (!amount) return;
+            try {
+                const amountWei = web3.utils.toWei(amount, 'ether');
+                const allowance = await tokenContract.methods.allowance(account, routerContract._address).call();
+                const hasAllowance = web3.utils.toBN(allowance).gte(amountWei);
+                document.getElementById('approveButton').classList.toggle('hidden', hasAllowance);
+                document.getElementById('addLiquidityButton').disabled = !hasAllowance;
+            } catch (error) {}
+        }
+
+        async function checkRemoveAllowance() {
+            try {
+                const lpBalance = await lpContract.methods.balanceOf(account).call();
+                const allowance = await lpContract.methods.allowance(account, routerContract._address).call();
+                const hasAllowance = web3.utils.toBN(allowance).gte(lpBalance);
+                const hasBalance = !web3.utils.toBN(lpBalance).isZero();
+                document.getElementById('approveLpButton').classList.toggle('hidden', hasAllowance);
+                document.getElementById('removeLiquidityButton').disabled = !hasAllowance || !hasBalance;
+            } catch (error) {}
+        }
+
+        async function calculateGTAmount() {
+            const amount = document.getElementById('tokenAmount').value.trim();
+            if (!amount) {
+                document.getElementById('gtAmount').value = '';
+                return;
+            }
+            try {
+                const reserves = await pairContract.methods.getReserves().call();
+                const token0 = await pairContract.methods.token0().call();
+                const tokenAddr = document.getElementById('tokenAddress').value.toLowerCase();
+                const isToken0 = token0.toLowerCase() === tokenAddr;
+                const reserveToken = isToken0 ? reserves[0] : reserves[1];
+                const reserveGT = isToken0 ? reserves[1] : reserves[0];
                 
-                document.getElementById('balanceA').textContent = web3.utils.fromWei(await tokenAContract.methods.balanceOf(account).call(), 'ether');
-                document.getElementById('balanceB').textContent = web3.utils.fromWei(await tokenBContract.methods.balanceOf(account).call(), 'ether');
-                document.getElementById('balanceLP').textContent = web3.utils.fromWei(await pairContract.methods.balanceOf(account).call(), 'ether');
-            } catch (err) {}
+                if (web3.utils.toBN(reserveToken).isZero()) {
+                    document.getElementById('gtAmount').value = '0.02';
+                    return;
+                }
+                
+                const amountWei = web3.utils.toWei(amount, 'ether');
+                const gtWei = web3.utils.toBN(amountWei).mul(web3.utils.toBN(reserveGT)).div(web3.utils.toBN(reserveToken));
+                document.getElementById('gtAmount').value = Number(web3.utils.fromWei(gtWei, 'ether')).toFixed(6);
+            } catch (error) {
+                document.getElementById('gtAmount').value = '0.02';
+            }
         }
-        
+
+        async function approveToken() {
+            const amount = document.getElementById('tokenAmount').value.trim();
+            document.getElementById('approveButton').innerHTML = '授权中... <i class="fa fa-spinner fa-spin ml-2"></i>';
+            try {
+                const amountWei = web3.utils.toWei(amount, 'ether');
+                const tx = await tokenContract.methods.approve(routerContract._address, amountWei).send({ from: account, gas: 100000 });
+                document.getElementById('progressStatus').innerText = `授权成功: ${tx.transactionHash}`;
+                await checkAddAllowance();
+            } catch (error) {
+                if (error.code === 4001) {
+                    document.getElementById('progressStatus').innerText = '错误: 用户取消授权';
+                } else {
+                    document.getElementById('progressStatus').innerText = `错误: 授权失败 - ${error.message}`;
+                }
+            } finally {
+                document.getElementById('approveButton').innerHTML = '授权 GDOG';
+            }
+        }
+
+        async function approveLpToken() {
+            document.getElementById('approveLpButton').innerHTML = '授权中... <i class="fa fa-spinner fa-spin ml-2"></i>';
+            try {
+                const maxAmount = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+                const tx = await lpContract.methods.approve(routerContract._address, maxAmount).send({ from: account, gas: 100000 });
+                document.getElementById('progressStatusRemove').innerText = `授权成功: ${tx.transactionHash}`;
+                await checkRemoveAllowance();
+            } catch (error) {
+                if (error.code === 4001) {
+                    document.getElementById('progressStatusRemove').innerText = '错误: 用户取消授权';
+                } else {
+                    document.getElementById('progressStatusRemove').innerText = `错误: 授权失败 - ${error.message}`;
+                }
+            } finally {
+                document.getElementById('approveLpButton').innerHTML = '授权 LP 代币';
+            }
+        }
+
         async function addLiquidity() {
-            const amountADesired = web3.utils.toWei(document.getElementById('amountADesired').value, 'ether');
-            const amountBDesired = web3.utils.toWei(document.getElementById('amountBDesired').value, 'ether');
-            const amountAMin = web3.utils.toWei((parseFloat(document.getElementById('amountADesired').value) * 0.99).toString(), 'ether');
-            const amountBMin = web3.utils.toWei((parseFloat(document.getElementById('amountBDesired').value) * 0.99).toString(), 'ether');
-            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-            
-            await pairContract.methods.mint(amountADesired, amountBDesired, amountAMin, amountBMin, account, deadline).send({from: account});
-            alert('Liquidity added!');
-            updateBalances();
-            document.getElementById('amountADesired').value = '';
-            document.getElementById('amountBDesired').value = '';
+            const amount = document.getElementById('tokenAmount').value.trim();
+            const gtAmount = document.getElementById('gtAmount').value.trim();
+            const slippage = document.getElementById('slippage').value.trim();
+            const button = document.getElementById('addLiquidityButton');
+
+            button.disabled = true;
+            button.innerHTML = '添加中... <i class="fa fa-spinner fa-spin ml-2"></i>';
+            document.getElementById('progressStatus').innerText = '添加流动性中...';
+
+            try {
+                const amountWei = web3.utils.toWei(amount, 'ether');
+                const gtWei = web3.utils.toWei(gtAmount, 'ether');
+                const slippagePercent = parseFloat(slippage) / 100;
+                const amountMin = web3.utils.toBN(amountWei).mul(web3.utils.toBN(Math.floor((1 - slippagePercent) * 1000))).div(web3.utils.toBN(1000));
+                const gtMin = web3.utils.toBN(gtWei).mul(web3.utils.toBN(Math.floor((1 - slippagePercent) * 1000))).div(web3.utils.toBN(1000));
+
+                const tx = await routerContract.methods.addLiquidityETH(
+                    tokenContract._address,
+                    amountWei,
+                    amountMin,
+                    gtMin,
+                    account,
+                    Math.floor(Date.now() / 1000) + 60 * 20
+                ).send({
+                    from: account,
+                    value: gtWei,
+                    gas: 10000000
+                });
+
+                document.getElementById('progressStatus').innerText = `成功: ${tx.transactionHash}`;
+                document.getElementById('networkStatus').innerText = '流动性添加成功！';
+                await checkAddBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    document.getElementById('progressStatus').innerText = '错误: 用户取消交易';
+                } else if (error.message.includes('insufficient funds')) {
+                    document.getElementById('progressStatus').innerText = '错误: 余额不足';
+                } else {
+                    document.getElementById('progressStatus').innerText = `错误: ${error.message}`;
+                }
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '添加流动性';
+            }
         }
-        
+
         async function removeLiquidity() {
-            const liquidity = web3.utils.toWei(document.getElementById('liquidity').value, 'ether');
-            const amountAMin = web3.utils.toWei(document.getElementById('amountAMin').value || 0, 'ether');
-            const amountBMin = web3.utils.toWei(document.getElementById('amountBMin').value || 0, 'ether');
-            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-            
-            await pairContract.methods.burn(liquidity, amountAMin, amountBMin, account, deadline).send({from: account});
-            alert('Liquidity removed!');
-            updateBalances();
-            document.getElementById('liquidity').value = '';
-            document.getElementById('amountAMin').value = '';
-            document.getElementById('amountBMin').value = '';
+            const button = document.getElementById('removeLiquidityButton');
+            const slippage = document.getElementById('slippageRemove').value.trim();
+
+            button.disabled = true;
+            button.innerHTML = '撤出中... <i class="fa fa-spinner fa-spin ml-2"></i>';
+            document.getElementById('progressStatusRemove').innerText = '撤出流动性中...';
+
+            try {
+                const lpBalance = await lpContract.methods.balanceOf(account).call();
+                if (web3.utils.toBN(lpBalance).isZero()) throw new Error('LP 余额为 0');
+
+                const tx = await routerContract.methods.removeLiquidityETH(
+                    document.getElementById('tokenAddressRemove').value,
+                    lpBalance,
+                    0,
+                    0,
+                    account,
+                    Math.floor(Date.now() / 1000) + 60 * 60
+                ).send({
+                    from: account,
+                    gas: 10000000
+                });
+
+                document.getElementById('progressStatusRemove').innerText = `成功: ${tx.transactionHash}`;
+                document.getElementById('networkStatusRemove').innerText = '流动性撤出成功！';
+                await checkRemoveBalances();
+            } catch (error) {
+                if (error.code === 4001) {
+                    document.getElementById('progressStatusRemove').innerText = '错误: 用户取消交易';
+                } else {
+                    document.getElementById('progressStatusRemove').innerText = `错误: ${error.message}`;
+                }
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '撤出全部流动性';
+            }
         }
-        
-        if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
+
+        function copyAddress() {
+            const addr = document.getElementById('tokenAddress').value;
+            navigator.clipboard.writeText(addr);
+            document.getElementById('progressStatus').innerText = '地址已复制！';
+        }
+
+        function copyLpAddress() {
+            const addr = document.getElementById('lpAddress').value;
+            navigator.clipboard.writeText(addr);
+            document.getElementById('progressStatusRemove').innerText = '地址已复制！';
+        }
+
+        document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
+        document.getElementById('approveButton').addEventListener('click', approveToken);
+        document.getElementById('addLiquidityButton').addEventListener('click', addLiquidity);
+        document.getElementById('approveLpButton').addEventListener('click', approveLpToken);
+        document.getElementById('removeLiquidityButton').addEventListener('click', removeLiquidity);
+        document.getElementById('tokenAmount').addEventListener('input', () => { checkAddBalances(); calculateGTAmount(); });
+        document.getElementById('slippage').addEventListener('input', checkAddAllowance);
+        document.getElementById('slippageRemove').addEventListener('input', checkRemoveAllowance);
+        document.getElementById('lpAddress').addEventListener('input', () => { initializeRemoveContracts(); checkRemoveBalances(); });
+
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            menuToggle.innerHTML = mobileMenu.classList.contains('hidden') ? '<i class="fa fa-bars"></i>' : '<i class="fa fa-times"></i>';
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                mobileMenu.classList.add('hidden');
+                menuToggle.innerHTML = '<i class="fa fa-bars"></i>';
+                document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-dark/95', 'shadow-lg');
+            } else {
+                navbar.classList.remove('bg-dark/95', 'shadow-lg');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAddContracts();
+            initializeRemoveContracts();
+        });
     </script>
 </body>
 </html>
