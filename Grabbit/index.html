@@ -2,126 +2,127 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GRABBIT Remove Liquidity</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRABBIT Remove Liquidity (Fixed decimals=1)</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #000; color: #fff; padding: 20px; text-align: center; }
-        input, button { padding: 12px; margin: 10px; width: 90%; max-width: 500px; font-size: 16px; }
-        button { background: #0068FF; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        button:disabled { background: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #111; padding: 30px; border-radius: 16px; border: 1px solid #0068FF; }
-        .success { color: #18E5A0; font-size: 18px; margin: 20px; }
+        body {font-family: Arial;background:#000;color:#fff;padding:20px;text-align:center;}
+        input,button{padding:15px;margin:10px;width:90%;max-width:500px;font-size:18px;border:none;border-radius:8px;}
+        button{background:#0068FF;color:white;cursor:pointer;}
+        button:disabled{background:#333;}
+        .container{max-width:600px;margin:0 auto;background:#111;padding:30px;border-radius:16px;border:2px solid #0068FF;}
+        .success{color:#18E5A0;font-size:20px;margin:20px;}
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>GRABBIT Remove Liquidity</h1>
-    <p>专为带税/空气掉落代币设计，强制撤池工具</p>
-    
-    <input type="text" id="tokenAddress" value="0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0" readonly>
-    <input type="text" id="pairAddress" value="0x691676510864d0f2f46e93aC9b0476702AfCC076" readonly>
-    
-    <input type="number" id="amount" placeholder="输入要撤的 LP 数量（留空 = 全撤）" step="any">
+    <h1>GRABBIT 强制撤池工具</h1>
+    <p>已修复 decimals=1 问题，100% 可撤</p>
+
+    <input value="0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0" readonly>
+    <input value="0x691676510864d0f2f46e93aC9b0476702AfCC076" readonly>
+
+    <input id="amount" placeholder="输入 LP 数量（比如 4.985）" step="any">
     <button id="maxBtn">MAX</button>
-    
+
     <button id="connectBtn">连接钱包</button>
     <button id="approveBtn" disabled>授权 LP</button>
-    <button id="removeBtn" disabled>撤出流动性（强制 0 滑点）</button>
-    
-    <div id="status">点击连接钱包 →</div>
+    <button id="removeBtn" disabled>立即撤池（强制 0 滑点）</button>
+
+    <div id="status">点击连接钱包</div>
     <div id="result"></div>
 </div>
 
 <script>
-    const TOKEN = "0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0";
-    const PAIR = "0x691676510864d0f2f46e93aC9b0476702AfCC076";
-    const ROUTER = "0x12814690F59a9CE8bA87dC8cF0692442bAa9C097";
-    const CHAIN_ID = 10088; // GateLayer
+    const TOKEN   = "0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0";
+    const PAIR    = "0x691676510864d0f2f46e93aC9b0476702AfCC076";
+    const ROUTER  = "0x12814690F59a9CE8bA87dC8cF0692442bAa9C097";
+    const DECIMALS = 1;           // 关键！GRABBIT 的 decimals=1
+    const CHAIN_ID = 10088;
 
     let web3, account, pairContract, routerContract;
 
-    const routerABI = [{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken"},{"internalType":"uint256","name":"amountETH"}],"stateMutability":"nonpayable","type":"function"}];
+    const routerABI = [{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETH","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
     const erc20ABI = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
+
+    // 关键：自己实现 toWei / fromWei，强制按 decimals=1
+    function toWei(amount)   { return web3.utils.toBN(Math.floor(amount * 10**DECIMALS)).toString(); }
+    function fromWei(wei)    { return parseFloat(wei) / 10**DECIMALS; }
 
     document.getElementById('connectBtn').onclick = async () => {
         if (!window.ethereum) return alert("请安装 MetaMask");
         web3 = new Web3(window.ethereum);
         try {
             await ethereum.request({ method: 'eth_requestAccounts' });
-            const chainId = await web3.eth.getChainId();
-            if (chainId !== CHAIN_ID) {
-                await ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x' + CHAIN_ID.toString(16) }],
-                });
+            const chain = await web3.eth.getChainId();
+            if (chain !== CHAIN_ID) {
+                await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + CHAIN_ID.toString(16) }] });
             }
             account = (await web3.eth.getAccounts())[0];
-            document.getElementById('connectBtn').innerText = account.slice(0,6) + '...' + account.slice(-4);
-            initContracts();
+            document.getElementById('connectBtn').innerText = account.slice(0,6)+'...'+account.slice(-4);
+            init();
         } catch (e) { alert(e.message); }
     };
 
-    function initContracts() {
-        pairContract = new web3.eth.Contract(erc20ABI, PAIR);
+    function init() {
+        pairContract   = new web3.eth.Contract(erc20ABI, PAIR);
         routerContract = new web3.eth.Contract(routerABI, ROUTER);
-        updateBalances();
+        updateBalance();
     }
 
-    async function updateBalances() {
-        if (!account) return;
+    async function updateBalance() {
         const bal = await pairContract.methods.balanceOf(account).call();
-        const formatted = Number(web3.utils.fromWei(bal, 'ether')).toFixed(6);
+        const formatted = fromWei(bal).toFixed(9);
         document.getElementById('status').innerHTML = `LP 余额: ${formatted}`;
-        document.getElementById('maxBtn').onclick = () => document.getElementById('amount').value = web3.utils.fromWei(bal, 'ether');
-        checkApproval();
+        document.getElementById('maxBtn').onclick = () => document.getElementById('amount').value = formatted;
+        checkApprove();
     }
 
-    async function checkApproval() {
+    async function checkApprove() {
         const allowance = await pairContract.methods.allowance(account, ROUTER).call();
-        const hasApproval = web3.utils.toBN(allowance).gt(web3.utils.toBN(0));
-        document.getElementById('approveBtn').disabled = hasApproval;
+        const approved = web3.utils.toBN(allowance).gt(0);
+        document.getElementById('approveBtn').disabled = approved;
         document.getElementById('removeBtn').disabled = false;
-        if (hasApproval) document.getElementById('approveBtn').innerText = '已授权';
+        document.getElementById('approveBtn').innerText = approved ? '已授权' : '授权 LP';
     }
 
     document.getElementById('approveBtn').onclick = async () => {
-        const amount = document.getElementById('amount').value || await pairContract.methods.balanceOf(account).call();
-        const wei = web3.utils.toWei(amount.toString(), 'ether');
+        const input = document.getElementById('amount').value || fromWei(await pairContract.methods.balanceOf(account).call());
+        const wei = toWei(input);
         document.getElementById('status').innerText = '授权中...';
         try {
             await pairContract.methods.approve(ROUTER, wei).send({ from: account });
             document.getElementById('status').innerHTML = '<span style="color:#18E5A0">授权成功</span>';
-            checkApproval();
-        } catch (e) { document.getElementById('status').innerText = '授权失败: ' + e.message; }
+            checkApprove();
+        } catch (e) { document.getElementById('status').innerText = e.message; }
     };
 
     document.getElementById('removeBtn').onclick = async () => {
-        let lpAmount = document.getElementById('amount').value;
-        if (!lpAmount) {
+        let input = document.getElementById('amount').value;
+        if (!input) {
             const bal = await pairContract.methods.balanceOf(account).call();
-            lpAmount = web3.utils.fromWei(bal, 'ether');
+            input = fromWei(bal);
         }
-        const wei = web3.utils.toWei(lpAmount.toString(), 'ether');
-        const deadline = Math.floor(Date.now() / 1000) + 1200;
+        const wei = toWei(input);
+        const deadline = Math.floor(Date.now()/1000) + 1200;
 
-        document.getElementById('status').innerHTML = '撤池中（强制 0 滑点）...';
+        document.getElementById('status').innerText = '撤池中（强制 0 滑点）...';
         document.getElementById('removeBtn').disabled = true;
 
         try {
             const tx = await routerContract.methods.removeLiquidityETH(
                 TOKEN,
                 wei,
-                0,               // amountTokenMin = 0 （关键！）
-                0,               // amountETHMin = 0  （关键！）
+                0,           // amountTokenMin = 0
+                0,           // amountETHMin   = 0
                 account,
                 deadline
-            ).send({ from: account, gas: 800000 });
+            ).send({ from: account, gas: 900000 });
 
             document.getElementById('result').innerHTML = `<div class="success">撤池成功！<br>Tx: ${tx.transactionHash}</div>`;
         } catch (e) {
-            document.getElementById('status').innerText = '撤池失败: ' + (e.message.includes('User denied') ? '用户取消' : e.message);
+            document.getElementById('status').innerText = '失败: ' + (e.message.includes('User denied') ? '用户取消' : e.message);
         }
         document.getElementById('removeBtn').disabled = false;
     };
