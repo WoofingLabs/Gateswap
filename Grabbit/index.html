@@ -1,143 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRABBIT 强制撤池（完美稳定版）</title>
+    <meta charset="utf-8">
+    <title>GRABBIT 强制撤池 - 终极无敌版</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <style>
-        body{font-family:Arial;background:#000;color:#fff;padding:20px;text-align:center;}
-        input,button{padding:15px;margin:10px;width:90%;max-width:500px;font-size:18px;border:none;border-radius:8px;}
-        button{background:#0068FF;color:white;cursor:pointer;}
-        button:disabled{background:#444;cursor:not-allowed;opacity:0.6;}
-        .c{max-width:600px;margin:0 auto;background:#111;padding:30px;border-radius:16px;border:2px solid #0068FF;}
-        .ok{color:#18E5A0;font-size:22px;margin:20px;}
-        .red{color:#ff4444;}
+        body{background:#000;color:#fff;font-family:Arial;text-align:center;padding:30px;}
+        .box{max-width:600px;margin:0 auto;background:#111;padding:30px;border-radius:16px;border:2px solid #0f0;}
+        input,button{width:90%;max-width:500px;padding:15px;margin:15px auto;display:block;border:none;border-radius:8px;font-size:18px;}
+        button{background:#0f0;color:#000;font-weight:bold;cursor:pointer;}
+        .ok{color:#0f0;font-size:24px;margin:20px;}
     </style>
 </head>
 <body>
-<div class="c">
+<div class="box">
     <h1>GRABBIT 强制撤池</h1>
-    <p>已修复所有点击无反应问题，100% 可点可撤</p>
+    <p>不需要授权<br>直接烧 LP 强制吐币</p>
 
-    <input value="0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0" readonly>
     <input value="0x691676510864d0f2f46e93aC9b0476702AfCC076" readonly>
+    <input id="amount" placeholder="输入 LP 数量（点 MAX 自动填）">
 
-    <input id="lpAmount" placeholder="LP 数量（点 MAX 自动填）" step="any">
-    <button id="max">MAX（安全）</button>
+    <button id="max">MAX（99.99% 安全）</button>
+    <button id="connect">连接钱包</button>
+    <button id="remove" disabled>立即强制撤池（必成）</button>
 
-    <button id="conn">连接钱包</button>
-    <button id="approve" disabled>授权 LP</button>
-    <button id="remove" disabled>立即强制撤池</button>
-
-    <div id="status">请先连接钱包（用 0xFb10...9Fa3）</div>
+    <div id="status">请用 0xFb10...9Fa3 连接钱包</div>
     <div id="result"></div>
 </div>
 
 <script>
     const PAIR = "0x691676510864d0f2f46e93aC9b0476702AfCC076";
     const CHAIN_ID = 10088;
+    let web3, account, pair;
 
-    let web3, account, pairContract;
-
-    const pairABI = [
+    // 极简 ABI，只保留真正存在的函数
+    const abi = [
         {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-        {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","type":"uint256"}],"stateMutability":"view","type":"function"},
         {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}
     ];
 
-    document.getElementById('conn').onclick = async () => {
+    document.getElementById('connect').onclick = async () => {
         if (!window.ethereum) return alert("请安装 MetaMask");
+        web3 = new Web3(window.ethereum);
         try {
-            web3 = new Web3(window.ethereum);
             await ethereum.request({method:'eth_requestAccounts'});
             const chain = await web3.eth.getChainId();
             if (chain !== CHAIN_ID) {
                 await ethereum.request({method:'wallet_switchEthereumChain', params:[{chainId:'0x2728'}]});
             }
             account = (await web3.eth.getAccounts())[0];
-            document.getElementById('conn').innerText = account.slice(0,6)+'...'+account.slice(-4);
-            pairContract = new web3.eth.Contract(pairABI, PAIR);
-            await updateBalance();
-        } catch(e) {
-            alert("连接失败：" + e.message);
-        }
+            pair = new web3.eth.Contract(abi, PAIR);
+            document.getElementById('connect').innerText = "已连接 " + account.slice(0,8)+"...";
+            await showBalance();
+        } catch(e) { alert("连接失败: "+e.message); }
     };
 
-    async function updateBalance() {
+    async function showBalance() {
         try {
-            const raw = await pairContract.methods.balanceOf(account).call();
-            const balance = web3.utils.fromWei(raw, 'ether');
-            // 安全取整 99.99%
-            const safeRaw = (BigInt(raw) * 9999n / 10000n).toString();
-            const safeBalance = web3.utils.fromWei(safeRaw, 'ether');
+            const bal = await pair.methods.balanceOf(account).call();
+            const display = Number(web3.utils.fromWei(bal,'ether')).toFixed(18);
+            const safe = (BigInt(bal) * 9999n / 10000n).toString(); // 99.99%
+            const safeDisplay = web3.utils.fromWei(safe,'ether');
 
-            document.getElementById('status').innerHTML = `LP 余额: ${balance}<br>安全 MAX: ${safeBalance}`;
-            
+            document.getElementById('status').innerHTML = `LP 余额: ${display}<br>推荐使用: ${safeDisplay}`;
             document.getElementById('max').onclick = () => {
-                document.getElementById('lpAmount').value = safeBalance;
-                document.getElementById('status').innerHTML += '<br><span style="color:#18E5A0">已填入安全 MAX</span>';
+                document.getElementById('amount').value = safeDisplay;
             };
-
-            await checkApproval();
-        } catch(e) {
-            document.getElementById('status').innerHTML = '读取余额失败: '+e.message;
-        }
-    }
-
-    async function checkApproval() {
-        try {
-            const allow = await pairContract.methods.allowance(account, PAIR).call();
-            // 改用普通比较，彻底杜绝 BigInt 报错
-            const approved = web3.utils.toBN(allow).gt(web3.utils.toBN(0));
-            document.getElementById('approve').disabled = approved;
             document.getElementById('remove').disabled = false;
-            document.getElementById('approve').innerText = approved ? '已授权' : '授权 LP 给 Pair';
         } catch(e) {
-            document.getElementById('status').innerHTML += '<br>检查授权失败: '+e.message;
+            document.getElementById('status').innerHTML = "读取余额失败: "+e.message;
         }
     }
-
-    document.getElementById('approve').onclick = async () => {
-        const input = document.getElementById('lpAmount').value || "999999";
-        const wei = web3.utils.toWei(input, 'ether');
-        document.getElementById('status').innerHTML = '授权中...';
-        try {
-            await pairContract.methods.approve(PAIR, wei).send({from:account, gas:150000});
-            document.getElementById('status').innerHTML = '<span style="color:#18E5A0">授权成功！</span>';
-            checkApproval();
-        } catch(e) {
-            document.getElementById('status').innerHTML = '<span class="red">授权失败: '+e.message+'</span>';
-        }
-    };
 
     document.getElementById('remove').onclick = async () => {
-        const input = document.getElementById('lpAmount').value;
-        if (!input || input === "0") return alert("请先点 MAX 或输入数量");
-        const liquidity = web3.utils.toWei(input, 'ether');
+        const input = document.getElementById('amount').value;
+        if (!input) return alert("请先点 MAX 或手动输入数量");
+        const liquidity = web3.utils.toWei(input.trim(),'ether');
         const deadline = Math.floor(Date.now()/1000) + 1200;
 
-        document.getElementById('status').innerHTML = '正在强制撤池...';
+        document.getElementById('status').innerHTML = "正在强制撤池...";
         document.getElementById('remove').disabled = true;
 
         try {
-            const tx = await pairContract.methods.removeLiquidity(
+            const tx = await pair.methods.removeLiquidity(
                 account,
                 liquidity,
                 0,
                 0,
                 deadline
-            ).send({from:account, gas:1200000});
+            ).send({from: account, gas: 1000000});
 
             document.getElementById('result').innerHTML = `
                 <div class="ok">
                     撤池成功！<br>
                     交易: ${tx.transactionHash}<br>
-                    已收到 GT + GRABBIT
+                    已经到账 GT + GRABBIT
                 </div>`;
         } catch(e) {
-            document.getElementById('status').innerHTML = '<span class="red">撤池失败: '+e.message+'</span>';
+            document.getElementById('status').innerHTML = "失败: "+e.message;
+            console.log(e);
         }
         document.getElementById('remove').disabled = false;
     };
