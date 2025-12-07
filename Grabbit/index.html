@@ -1,139 +1,288 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>GRABBIT 一键撤池</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
-    <style>
-        body{font-family:Arial;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
-        .box{max-width:420px;width:90%;background:#111;padding:30px;border-radius:20px;box-shadow:0 0 30px #0068ff;border:1px solid #0068ff}
-        h1{font-size:28px;text-align:center;margin:0 0 20px;color:#00ffff}
-        .info{background:#222;padding:10px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:13px;word-break:break-all}
-        input{width:100%;padding:14px;box-sizing:border-box;background:#222;border:1px solid #444;border-radius:8px;color:#fff;margin:15px 0;font-size:16px}
-        button{width:100%;padding:16px;background:#f1404b;border:none;border-radius:12px;color:#fff;font-size:18px;font-weight:bold;cursor:pointer;margin:10px 0}
-        button:hover{background:#ff1744}
-        button:disabled{background:#333;cursor:not-allowed}
-        #status{margin-top:15px;text-align:center;min-height:24px;font-size:14px}
-        .maxbtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#00ffff;color:#000;padding:8px 12px;border-radius:6px;font-weight:bold;font-size:12px}
-        .amt{position:relative}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GateSwap</title>
+    <link rel="icon" type="image/png" href="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0068FF',
+                        secondary: '#18E5A0',
+                        accent: '#FFD700',
+                        dark: '#070808',
+                        'light-gray': '#E5E7EB'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Changa One', 'system-ui', 'sans-serif']
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-glow': 'pulse 4s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-8px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow-glow { text-shadow: 0 0 10px rgba(0, 104, 255, 0.5); }
+            .glow-border { box-shadow: 0 0 12px rgba(24, 229, 160, 0.3); }
+            .bg-grid {
+                background-image: url('data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Ccircle cx="1" cy="1" r="1" fill="%230068FF" fill-opacity="0.1"/%3E%3C/svg%3E');
+                background-size: 20px 20px;
+            }
+            .input-field {
+                @apply w-full px-4 py-3 bg-dark/80 border border-primary/30 rounded-lg text-white placeholder-light-gray/70 focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30 transition-all duration-300;
+            }
+            .address-input {
+                @apply flex-1 bg-transparent border-none text-white font-mono text-sm focus:outline-none;
+            }
+            .quick-token-btn {
+                @apply w-full px-4 py-2 bg-secondary text-dark rounded-lg font-medium hover:bg-secondary/80 transition-all flex items-center justify-center space-x-2;
+            }
+            .max-btn {
+                @apply absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-secondary text-dark text-xs rounded hover:bg-secondary/80 transition-all;
+            }
+        }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Changa+One&display=swap" rel="stylesheet">
 </head>
-<body>
-<div class="box">
-    <h1>GRABBIT 撤池神器</h1>
-    <div class="info">Token: 0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0</div>
-    <div class="info">Pair : 0x691676510864d0f2f46e93aC9b0476702AfCC076</div>
-    <div class="info">WGT  : 0x6803b8E93b13941F6B73b82E324B80251B3dE338</div>
-    <div class="info">Router: 0x12814690F59a9CE8bA87dC8cF0692442bAa9C097</div>
+<body class="bg-dark text-white font-sans overflow-x-hidden">
+    <header class="fixed w-full z-50 bg-dark/90 backdrop-blur-md transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer hover:text-primary transition-colors" onclick="fillGRABBIT()">
+                <div class="w-10 h-10 rounded-full overflow-hidden">
+                    <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="Logo" class="w-full h-full object-cover">
+                </div>
+                <span class="font-display text-3xl text-primary text-shadow-glow">GateSwap</span>
+            </div>
+        </div>
+    </header>
 
-    <div class="amt">
-        <input id="amount" placeholder="LP 数量（留空 = 全撤）">
-        <div class="maxbtn" onclick="setMax()">MAX</div>
-    </div>
+    <section id="liquidity" class="min-h-screen pt-24 pb-16 bg-grid relative overflow-hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-gradient-to-b from-primary/10 to-dark pointer-events-none"></div>
+        <div class="container mx-auto px-4 text-center relative z-10">
+            <div class="w-48 h-48 mx-auto mb-4 animate-float cursor-pointer" onclick="fillGRABBIT()">
+                <img src="https://woofinglabs.github.io/GdogToTheMoon/images/gdog_logo.png" alt="Logo" class="w-full h-full object-cover rounded-full border-4 border-secondary/50 glow-border">
+            </div>
+            
+            <button onclick="fillGRABBIT()" class="quick-token-btn mb-6">
+                <span>一键加载 GRABBIT 撤池</span>
+            </button>
 
-    <div style="text-align:center;color:#888;margin:10px 0">
-        你的 LP 余额: <span id="lpBalance">0</span>
-    </div>
+            <h1 class="font-display text-5xl md:text-7xl mb-6 text-primary text-shadow-glow">GateSwap</h1>
+            <p class="text-xl md:text-2xl text-light-gray max-w-3xl mx-auto mb-10">
+                Add or remove liquidity for ANY token pair.
+            </p>
+            <div class="bg-dark/50 p-8 rounded-xl border border-primary/30 max-w-md mx-auto">
+                <div class="flex flex-col space-y-5">
+                    <div class="flex justify-center gap-4">
+                        <button id="addModeButton" class="px-6 py-3 bg-dark/80 border-2 border-secondary text-secondary rounded-full font-medium hover:bg-secondary/10 transition-all">Add Liquidity</button>
+                        <button id="removeModeButton" class="px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all shadow-lg">Remove Liquidity</button>
+                    </div>
 
-    <button id="connectBtn" onclick="connect()">连接钱包（GateLayer）</button>
-    <button id="removeBtn" onclick="removeLiquidity()" disabled>立即撤池（支持带税代币）</button>
+                    <button id="connectWalletButton" class="w-full px-6 py-3 bg-primary text-white rounded-full font-medium hover:bg-primary/80 transition-all shadow-lg">Connect Wallet</button>
+                    <p id="networkStatus" class="text-light-gray text-sm">Click to connect wallet...</p>
 
-    <div id="status"></div>
-</div>
+                    <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
+                        <input id="tokenAddress" type="text" placeholder="0x... Token Contract Address" class="address-input" value="0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('tokenAddress')">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
 
-<script>
-// 固定参数
-const TOKEN   = "0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0";
-const PAIR    = "0x691676510864d0f2f46e93aC9b0476702AfCC076";
-const WGT     = "0x6803b8E93b13941F6B73b82E324B80251B3dE338";
-const ROUTER  = "0x12814690F59a9CE8bA87dC8cF0692442bAa9C097";
+                    <div class="flex items-center bg-dark/80 p-4 rounded-lg border border-primary/20">
+                        <input id="pairAddress" type="text" placeholder="0x... Pair Address" class="address-input" value="0x691676510864d0f2f46e93aC9b0476702AfCC076">
+                        <button class="ml-3 text-light-gray hover:text-secondary transition-colors" onclick="copyAddress('pairAddress')">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
 
-const routerABI = [{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETHSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}];
+                    <p id="balanceStatus" class="text-light-gray text-sm">GT Balance: 0 | LP Balance: 0</p>
 
-const erc20ABI = [{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
+                    <div class="relative">
+                        <label id="amountLabel" class="block text-left text-light-gray mb-3 font-medium">LP Amount</label>
+                        <input id="amount" type="text" placeholder="0.0" class="input-field pr-12">
+                        <button id="maxButton" class="max-btn" onclick="setMaxAmount()">MAX</button>
+                    </div>
 
-let web3, account, router, pairContract;
+                    <div>
+                        <label class="block text-left text-light-gray mb-3 font-medium">Slippage Tolerance (%)</label>
+                        <input id="slippage" type="text" value="15" class="input-field">
+                    </div>
 
-async function connect(){
-    if(!window.ethereum) return alert("请安装 MetaMask");
-    web3 = new Web3(window.ethereum);
-    try{
-        await ethereum.request({method:'eth_requestAccounts'});
-        account = (await web3.eth.getAccounts())[0];
+                    <div class="text-light-gray text-sm py-2">
+                        <span>Router: <span class="text-primary font-mono">0x12814690F59a9CE8bA87dC8cF0692442bAa9C097</span></span>
+                    </div>
 
-        // 自动切换到 GateLayer
-        try{
-            await ethereum.request({method:'wallet_switchEthereumChain', params:[{chainId:'0x2728'}]}); // 10088 = 0x2728
-        }catch(e){
-            if(e.code===4902){
-                await ethereum.request({method:'wallet_addEthereumChain', params:[{
-                    chainId:'0x2728',
-                    chainName:'GateLayer',
-                    rpcUrls:['https://gatelayer-mainnet.gatenode.cc'],
-                    nativeCurrency:{name:'GT',symbol:'GT',decimals:18},
-                    blockExplorerUrls:['https://www.gatescan.org/gatelayer/']
-                }]});
+                    <button id="liquidityButton" class="w-full px-6 py-3 bg-red-600 text-white rounded-full font-medium hover:bg-red-700 transition-all shadow-lg">Remove Liquidity (支持带税)</button>
+
+                    <p id="progressStatus" class="text-light-gray text-sm">GRABBIT 已加载，连接钱包后点击 MAX → Remove</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        const FIXED_ROUTER = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
+        const WGT = '0x6803b8E93b13941F6B73b82E324B80251B3dE338';
+        
+        const chains = {
+            GateLayer: {
+                chainId: 10088,
+                chainName: 'Gate Layer',
+                rpcUrl: 'https://gatelayer-mainnet.gatenode.cc',
+                blockExplorer: 'https://www.gatescan.org/gatelayer/',
+                nativeCurrency: { name: 'GT', symbol: 'GT', decimals: 18 }
+            }
+        };
+
+        // 关键：增加了支持带税代币的撤池函数
+        const routerAbi = [
+            {"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"liquidity","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"removeLiquidityETHSupportingFeeOnTransferTokens","outputs":[{"internalType":"uint256","name":"amountETH","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amountTokenDesired","type":"uint256"},{"internalType":"uint256","name":"amountTokenMin","type":"uint256"},{"internalType":"uint256","name":"amountETHMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidityETH","outputs":[{"internalType":"uint256","name":"amountToken","type":"uint256"},{"internalType":"uint256","name":"amountETH","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"stateMutability":"payable","type":"function"}
+        ];
+
+        const erc20Abi = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
+        ];
+
+        let web3, account, routerContract, tokenContract, lpContract, isAddMode = false;
+
+        function fillGRABBIT() {
+            document.getElementById('tokenAddress').value = '0xA930Bbe6062cB0D67a2152F30a63Adb846e58fE0';
+            document.getElementById('pairAddress').value = '0x691676510864d0f2f46e93aC9b0476702AfCC076';
+            document.getElementById('progressStatus').innerText = 'GRABBIT 已加载，准备撤池';
+            if (web3 && account) initializeContracts();
+        }
+
+        async function initializeWeb3() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    account = (await web3.eth.getAccounts())[0];
+                    document.getElementById('connectWalletButton').innerText = `Connected: ${account.slice(0, 6)}...${account.slice(-4)}`;
+                    await switchNetwork('GateLayer');
+                    routerContract = new web3.eth.Contract(routerAbi, FIXED_ROUTER);
+                    initializeContracts();
+                    checkBalancesAndAllowance();
+                    document.getElementById('networkStatus').innerText = 'GateLayer Connected';
+                } catch (error) {
+                    document.getElementById('progressStatus').innerText = `连接失败: ${error.message}`;
+                }
+            } else {
+                alert('请安装 MetaMask');
             }
         }
 
-        router = new web3.eth.Contract(routerABI, ROUTER);
-        pairContract = new web3.eth.Contract(erc20ABI, PAIR);
+        async function switchNetwork(chain) {
+            const chainConfig = chains[chain];
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${chainConfig.chainId.toString(16)}` }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: `0x${chainConfig.chainId.toString(16)}`,
+                            chainName: chainConfig.chainName,
+                            rpcUrls: [chainConfig.rpcUrl],
+                            nativeCurrency: chainConfig.nativeCurrency,
+                            blockExplorerUrls: [chainConfig.blockExplorer]
+                        }]
+                    });
+                }
+            }
+        }
 
-        document.getElementById("connectBtn").innerText = account.slice(0,8)+"..."+account.slice(-6);
-        document.getElementById("removeBtn").disabled = false;
-        updateBalance();
-        setInterval(updateBalance, 6000);
-    }catch(e){ document.getElementById("status").innerText = "连接失败: "+e.message; }
-}
+        function initializeContracts() {
+            const tokenAddr = document.getElementById('tokenAddress').value.trim();
+            const pairAddr = document.getElementById('pairAddress').value.trim();
+            if (tokenAddr) tokenContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(tokenAddr));
+            if (pairAddr) lpContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(pairAddr));
+        }
 
-async function updateBalance(){
-    if(!account) return;
-    try{
-        const b = await pairContract.methods.balanceOf(account).call();
-        const f = Number(web3.utils.fromWei(b,'ether')).toFixed(6);
-        document.getElementById("lpBalance").innerText = f;
-    }catch(e){}
-}
+        async function checkBalancesAndAllowance() {
+            if (!account || !lpContract) return;
+            try {
+                const gtBalance = await web3.eth.getBalance(account);
+                const lpBalance = await lpContract.methods.balanceOf(account).call();
+                document.getElementById('balanceStatus').innerText = 
+                    `GT: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4)} | LP: ${Number(web3.utils.fromWei(lpBalance, 'ether')).toFixed(6)}`;
+            } catch (e) {}
+        }
 
-function setMax(){
-    const cur = document.getElementById("lpBalance").innerText;
-    if(cur!=="0") document.getElementById("amount").value = cur;
-}
+        function setMaxAmount() {
+            if (lpContract && account) {
+                lpContract.methods.balanceOf(account).call().then(balance => {
+                    document.getElementById('amount').value = web3.utils.fromWei(balance, 'ether');
+                });
+            }
+        }
 
-async function removeLiquidity(){
-    let amount = document.getElementById("amount").value.trim();
-    if(!amount) amount = document.getElementById("lpBalance").innerText;
-    if(!amount || Number(amount)<=0) return alert("数量无效");
+        async function executeLiquidity() {
+            if (!lpContract || !account) return;
+            let amount = document.getElementById('amount').value.trim();
+            if (!amount || amount === '0') return alert('请输入数量');
+            
+            document.getElementById('liquidityButton').disabled = true;
+            document.getElementById('progressStatus').innerText = '正在授权 LP...';
 
-    const status = document.getElementById("status");
-    status.innerText = "正在授权 LP...";
-    document.getElementById("removeBtn").disabled = true;
+            try {
+                // 授权
+                await lpContract.methods.approve(FIXED_ROUTER, web3.utils.toWei(amount, 'ether')).send({from: account});
+                document.getElementById('progressStatus').innerText = '授权成功，正在撤池（支持带税）...';
 
-    try{
-        // 1. 授权
-        await pairContract.methods.approve(ROUTER, web3.utils.toWei(amount,'ether')).send({from:account});
-        status.innerText = "授权成功，正在撤池（支持带税）...";
+                const deadline = Math.floor(Date.now() / 1000) + 1200;
+                const tx = await routerContract.methods.removeLiquidityETHSupportingFeeOnTransferTokens(
+                    tokenContract._address,
+                    web3.utils.toWei(amount, 'ether'),
+                    0,  // amountTokenMin = 0
+                    0,  // amountETHMin = 0 (WGT)
+                    account,
+                    deadline
+                ).send({from: account, gas: 900000});
 
-        // 2. 撤池（关键：用 SupportingFeeOnTransferTokens 版本）
-        const deadline = Math.floor(Date.now()/1000) + 1800;
-        await router.methods.removeLiquidityETHSupportingFeeOnTransferTokens(
-            TOKEN,
-            web3.utils.toWei(amount,'ether'),
-            0,               // 接受任意数量 GRABBIT（因为有税）
-            0,               // 接受任意数量 WGT
-            account,
-            deadline
-        ).send({from:account, gas:900000});
+                document.getElementById('progressStatus').innerHTML = `<span style="color:#0f0">撤池成功！TX: ${tx.transactionHash.substr(0,10)}...</span>`;
+                checkBalancesAndAllowance();
+            } catch (err) {
+                document.getElementById('progressStatus').innerText = err.message.includes('User denied') ? '用户取消' : '失败: ' + err.message;
+            }
+            document.getElementById('liquidityButton').disabled = false;
+        }
 
-        status.innerHTML = `<span style="color:#0f0">撤池成功！GRABBIT + WGT 已到账</span>`;
-        updateBalance();
-        document.getElementById("amount").value = "";
-    }catch(e){
-        status.innerText = e.message.includes("User denied") ? "用户取消交易" : "失败: "+e.message;
-    }
-    document.getElementById("removeBtn").disabled = false;
-}
-</script>
+        function copyAddress(id) {
+            const input = document.getElementById(id);
+            input.select();
+            document.execCommand('copy');
+            document.getElementById('progressStatus').innerText = '地址已复制';
+        }
+
+        document.getElementById('connectWalletButton').onclick = initializeWeb3;
+        document.getElementById('liquidityButton').onclick = executeLiquidity;
+        document.getElementById('removeModeButton').classList.add('bg-primary', 'text-white');
+        document.getElementById('addModeButton').classList.remove('bg-primary', 'text-white');
+        document.getElementById('amount').addEventListener('input', checkBalancesAndAllowance);
+        fillGRABBIT();
+    </script>
 </body>
 </html>
